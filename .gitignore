@@ -1,0 +1,40 @@
+# Ambientes virtuais Python
+venv/
+env/
+ENV/
+.venv/
+
+# Variáveis de ambiente e credenciais
+.env
+.env.local
+*.env
+!.env.example
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Dados locais e banco SQLite
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.db
+*.sqlite
+
+# Vercel e builds
+.vercel/
+dist/
+build/
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log

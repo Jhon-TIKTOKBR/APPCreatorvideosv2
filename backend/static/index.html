@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Shop AI Studio - Criação de Vídeos</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#fdf2f8',
+              100: '#fce7f3',
+              400: '#f472b6',
+              500: '#ec4899',
+              600: '#db2777',
+              700: '#be185d'
+            },
+            dark: {
+              950: '#070a12',
+              900: '#0b0f19',
+              850: '#101626',
+              800: '#172033',
+              700: '#1f2d47',
+              600: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass-card {
+      background: rgba(16, 22, 38, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(236, 72, 153, 0.35);
+      box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.15);
+    }
+    .step-active {
+      background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.35);
+    }
+    .step-done {
+      background: #10b981;
+      color: white;
+    }
+    .step-pending {
+      background: #1f2d47;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-[#070a12] text-gray-100 min-h-screen flex flex-col antialiased selection:bg-pink-500 selection:text-white">
+
+  <!-- Header Simplificado e Elegante -->
+  <header class="border-b border-gray-800/80 bg-[#0b0f19]/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-pink-500/25">
+          <i data-lucide="video" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-xl leading-none tracking-tight flex items-center gap-2">
+            TikTok Shop <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">AI Studio</span>
+          </h1>
+          <p class="text-xs text-gray-400 mt-1 font-medium">Estúdio de Criação de Vídeos de Alta Conversão</p>
+        </div>
+      </div>
+
+      <!-- Referências Ativas Badge -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
+          Modelo Ruiva & Provador Ativos
+        </div>
+        <button onclick="resetWizard()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Novo Vídeo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Stepper de Progresso -->
+    <div class="mb-10">
+      <div class="flex items-center justify-between relative max-w-3xl mx-auto">
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-800 -z-0"></div>
+        <div id="step-line-progress" class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-pink-500 to-rose-500 -z-0 transition-all duration-500" style="width: 0%"></div>
+
+        <!-- Passo 1 -->
+        <div onclick="navigateStep(1)" class="relative z-10 flex flex-col items-center cursor-pointer group">
+          <div id="badge-step-1" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-active transition-all group-hover:scale-110">
+            1
+          </div>
+          <span class="text-xs font-semibold mt-2 text-white">Vídeo & Produto</span>
+        </div>
+
+        <!-- Passo 2 -->
+        <div onclick="navigateStep(2)" class="relative z-10 flex flex-col items-center cursor-pointer group">
+          <div id="badge-step-2" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-pending transition-all group-hover:scale-110">
+            2
+          </div>
+          <span class="text-xs font-semibold mt-2 text-gray-400">3 Roteiros</span>
+        </div>
+
+        <!-- Passo 3 -->
+        <div onclick="navigateStep(3)" class="relative z-10 flex flex-col items-center cursor-pointer group">
+          <div id="badge-step-3" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-pending transition-all group-hover:scale-110">
+            3
+          </div>
+          <span class="text-xs font-semibold mt-2 text-gray-400">Ambiente</span>
+        </div>
+
+        <!-- Passo 4 -->
+        <div onclick="navigateStep(4)" class="relative z-10 flex flex-col items-center cursor-pointer group">
+          <div id="badge-step-4" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-pending transition-all group-hover:scale-110">
+            4
+          </div>
+          <span class="text-xs font-semibold mt-2 text-gray-400">Prompts & Áudio</span>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- PASSO 1: CONFIGURAÇÃO INICIAL (VÍDEO & PRODUTO) -->
+    <!-- ========================================== -->
+    <section id="step-1" class="space-y-6">
+      <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <div class="mb-6">
+          <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+            <i data-lucide="sparkles" class="w-6 h-6 text-pink-500"></i>
+            Criar Vídeo de Alta Conversão
+          </h2>
+          <p class="text-sm text-gray-400 mt-1">
+            Selecione o formato, insira o link de inspiração da concorrência e o nome do produto que você quer vender.
+          </p>
+        </div>
+
+        <form id="wizard-form-step-1" onsubmit="handleAnalyzeSubmit(event)" class="space-y-6">
+          <!-- Formato do Vídeo -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-200 mb-2">Formato do Vídeo</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label class="relative flex flex-col p-4 rounded-xl border border-pink-500/40 bg-pink-500/10 cursor-pointer hover:border-pink-500 transition format-option">
+                <input type="radio" name="video_format" value="UGC-POV" checked class="sr-only" onchange="updateFormatSelection(this)">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-white text-sm flex items-center gap-1.5">
+                    <i data-lucide="smartphone" class="w-4 h-4 text-pink-400"></i> UGC-POV
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-500 text-white uppercase tracking-wider">Recomendado</span>
+                </div>
+                <p class="text-xs text-gray-300">Celular cobrindo o rosto no espelho. Estilo Provador Boutique com cortes rápidos (1.5s).</p>
+              </label>
+
+              <label class="relative flex flex-col p-4 rounded-xl border border-gray-800 bg-gray-900/60 cursor-pointer hover:border-gray-700 transition format-option">
+                <input type="radio" name="video_format" value="POV" class="sr-only" onchange="updateFormatSelection(this)">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-white text-sm flex items-center gap-1.5">
+                    <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i> POV Espelho
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400">Perspectiva direta no espelho com foco em modelagem e caimento sem narrativa falada.</p>
+              </label>
+
+              <label class="relative flex flex-col p-4 rounded-xl border border-gray-800 bg-gray-900/60 cursor-pointer hover:border-gray-700 transition format-option">
+                <input type="radio" name="video_format" value="UGC" class="sr-only" onchange="updateFormatSelection(this)">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-white text-sm flex items-center gap-1.5">
+                    <i data-lucide="user-check" class="w-4 h-4 text-gray-400"></i> UGC Tradicional
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400">Estilo criadora espontânea mostrando o produto, detalhes e primeira impressão da peça.</p>
+              </label>
+            </div>
+          </div>
+
+          <!-- Modo de Narração (Novo) -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-200 mb-2 flex items-center justify-between">
+              <span>Modo de Narração do Vídeo</span>
+              <span class="text-[10px] text-pink-400 font-normal">Escolha como prefere a voz</span>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="relative flex flex-col p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 cursor-pointer hover:border-emerald-500 transition narration-option">
+                <input type="radio" name="narration_mode_input" value="separate" checked class="sr-only" onchange="updateNarrationSelection(this)">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-white text-sm flex items-center gap-1.5">
+                    <i data-lucide="mic" class="w-4 h-4 text-emerald-400"></i> Narração Separada em Outro Site
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Recomendado</span>
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed">Vídeo com foco total em alta velocidade de movimentos no Flow. Áudio em PT-BR narrado no <strong>CapCut</strong> (Voz Jéssica 1.15x) ou <strong>ElevenLabs</strong> para sincronia e fala natural perfeita.</p>
+              </label>
+
+              <label class="relative flex flex-col p-4 rounded-xl border border-gray-800 bg-gray-900/60 cursor-pointer hover:border-gray-700 transition narration-option">
+                <input type="radio" name="narration_mode_input" value="embedded" class="sr-only" onchange="updateNarrationSelection(this)">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-bold text-white text-sm flex items-center gap-1.5">
+                    <i data-lucide="film" class="w-4 h-4 text-purple-400"></i> Narração Embutida Direto no Flow
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 uppercase">Tudo em 1</span>
+                </div>
+                <p class="text-xs text-gray-400 leading-relaxed">Insere o diálogo falado em português brasileiro diretamente dentro do prompt de vídeo do Flow. A modelo mantém o celular no rosto, gerando vídeo e fala juntos na IA.</p>
+              </label>
+            </div>
+          </div>
+
+          <!-- Links de Entrada -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Link do Concorrente -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                <span>Link do Vídeo do Concorrente (TikTok)</span>
+                <span class="text-[10px] text-pink-400 font-normal">Identifica o produto automaticamente</span>
+              </label>
+              <div class="relative">
+                <i data-lucide="link" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input 
+                  type="url" 
+                  id="competitor-url" 
+                  required
+                  oninput="handleCompetitorUrlInput(this.value)"
+                  onpaste="handleCompetitorUrlPaste(event)"
+                  placeholder="https://www.tiktok.com/@concorrente/video/..." 
+                  class="w-full bg-[#101626] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition"
+                >
+              </div>
+              <p class="text-[11px] text-gray-400 mt-1.5">Ao colar o link, o sistema extrai o ritmo, cortes e o nome do produto automaticamente.</p>
+            </div>
+
+            <!-- Produto Alvo -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                <span>Nome ou Link do Seu Produto</span>
+                <span class="text-[10px] text-emerald-400 font-normal">Detecta automaticamente</span>
+              </label>
+              <div class="relative">
+                <i data-lucide="shopping-bag" class="w-4 h-4 text-pink-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input 
+                  type="text" 
+                  id="product-input" 
+                  oninput="handleProductInput(this.value)"
+                  onpaste="handleProductPaste(event)"
+                  placeholder="Cole o link do produto ou digite o nome (opcional se colar o vídeo)" 
+                  value=""
+                  class="w-full bg-[#101626] border border-pink-500/40 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-medium"
+                >
+              </div>
+              <!-- Status de Detecção Automática -->
+              <div id="product-detection-status" class="hidden text-xs text-pink-400 font-medium flex items-center gap-1.5 mt-1.5"></div>
+              <p class="text-[11px] text-gray-400 mt-1.5">Cole o link da TikTok Shop, Shopee ou digite o nome. Se deixar vazio, identificamos pelo vídeo.</p>
+            </div>
+          </div>
+
+          <!-- Botão Analisar & Gerar 3 Roteiros -->
+          <div class="pt-2">
+            <button 
+              type="submit" 
+              id="btn-analyze"
+              class="w-full py-4 px-6 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-base rounded-xl shadow-xl shadow-pink-500/25 flex items-center justify-center gap-2.5 transition active:scale-[0.99]"
+            >
+              <i data-lucide="wand-2" class="w-5 h-5"></i>
+              <span>Analisar Vídeo & Gerar 3 Roteiros</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- PASSO 2: 3 VERSÕES DE ROTEIROS BASEADOS NO CONCORRENTE -->
+    <!-- ========================================== -->
+    <section id="step-2" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="file-text" class="w-6 h-6 text-pink-500"></i>
+            Escolha 1 dos 3 Roteiros Gerados
+          </h2>
+          <p class="text-sm text-gray-400 mt-0.5">
+            Baseados no ritmo e movimentação de alta conversão. Cada versão explora um gatilho de venda diferente.
+          </p>
+        </div>
+        <button onclick="goToStep(1)" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Vídeo & Produto
+        </button>
+      </div>
+
+      <!-- Banner com Nome do Produto em Destaque -->
+      <div class="glass-card rounded-xl p-3.5 px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
+        <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
+        <div class="text-xs">
+          <span class="text-gray-400 font-medium">Produto em Produção:</span>
+          <span id="step2-product-badge" class="font-bold text-white text-sm ml-1.5"></span>
+        </div>
+      </div>
+
+      <!-- Container das 3 Versões de Roteiros -->
+      <div id="scripts-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+
+      <!-- Botão Voltar Inferior no Passo 2 -->
+      <div class="pt-4 flex items-center justify-start border-t border-gray-800/80">
+        <button onclick="goToStep(1)" class="py-2.5 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar para Passo 1 (Vídeo & Produto)
+        </button>
+      </div>
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- PASSO 3: SELECIONAR O AMBIENTE -->
+    <!-- ========================================== -->
+    <section id="step-3" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="image" class="w-6 h-6 text-pink-500"></i>
+            Selecionar o Ambiente para a Modelo
+          </h2>
+          <p class="text-sm text-gray-400 mt-0.5">
+            A modelo ruiva manterá a mesma postura, joias e iluminação de referência em qualquer ambiente escolhido.
+          </p>
+        </div>
+        <button onclick="goToStep(2)" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Roteiros
+        </button>
+      </div>
+
+      <!-- Banner com Nome do Produto em Destaque -->
+      <div class="glass-card rounded-xl p-3.5 px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
+        <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
+        <div class="text-xs">
+          <span class="text-gray-400 font-medium">A modelo vestirá o produto:</span>
+          <span id="step3-product-badge" class="font-bold text-white text-sm ml-1.5"></span>
+        </div>
+      </div>
+
+      <!-- Informação da Modelo Fiel -->
+      <div class="glass-card rounded-xl p-4 flex items-center gap-4 border-l-4 border-l-pink-500">
+        <img src="/references/Modelo%20e%20ambiente%201.jpeg" class="w-14 h-14 rounded-lg object-cover border border-pink-500/30 flex-shrink-0" alt="Modelo de Referência">
+        <div class="text-xs text-gray-300">
+          <p class="font-bold text-white text-sm">Modelo de Referência Bloqueada</p>
+          <p class="text-gray-400">Mulher ruiva com ondas naturais, iPhone branco cobrindo os olhos/rosto, relógio dourado no pulso direito, pulseira dourada fina no esquerdo, tênis branco e postura de provador.</p>
+        </div>
+      </div>
+
+      <!-- Grid dos 3 Ambientes -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="environments-container">
+        <!-- Renderizado via JS -->
+      </div>
+
+      <!-- Ações Inferiores no Passo 3 (Voltar + Confirmar) -->
+      <div class="pt-4 flex items-center justify-between border-t border-gray-800/80">
+        <button onclick="goToStep(2)" class="py-3 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar para Passo 2 (Roteiros)
+        </button>
+        <button 
+          id="btn-confirm-environment"
+          onclick="handleGenerateFlowPrompt()"
+          class="py-3.5 px-8 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg shadow-pink-500/25 flex items-center gap-2 transition active:scale-95"
+        >
+          <span>Gerar Prompts & Áudio</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+
+    <!-- ========================================== -->
+    <!-- PASSO 4: PROMPTS MASTER GOOGLE FLOW & ÁUDIO -->
+    <!-- ========================================== -->
+    <section id="step-4" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="check-circle-2" class="w-6 h-6 text-emerald-400"></i>
+            Prompts Prontos para o Google Flow & Áudio
+          </h2>
+          <p class="text-sm text-gray-400 mt-0.5">
+            Copie os prompts abaixo para gerar a foto da modelo com o produto e as animações de vídeo no Google Flow.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="goToStep(3)" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Ambiente
+          </button>
+          <button onclick="resetWizard()" class="text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Criar Outro Vídeo
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner com Nome do Produto em Destaque -->
+      <div class="glass-card rounded-xl p-3.5 px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
+        <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
+        <div class="text-xs">
+          <span class="text-gray-400 font-medium">Produto Configurado nos Prompts:</span>
+          <span id="step4-product-badge" class="font-bold text-white text-sm ml-1.5"></span>
+        </div>
+      </div>
+
+      <!-- Alternador de Modo de Narração no Passo 4 -->
+      <div class="glass-card rounded-2xl p-4 border border-gray-800 bg-gray-900/60 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="sliders" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white">Modo de Narração Ativo:</span>
+              <span id="current-narration-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Narração Separada (CapCut)</span>
+            </div>
+            <p id="narration-mode-desc" class="text-[11px] text-gray-400 mt-0.5">
+              Alterne em 1 clique para ver os prompts com fala embutida direto no Flow ou áudio separado.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center p-1 rounded-xl bg-[#0b0f19] border border-gray-800 text-xs w-full md:w-auto">
+          <button 
+            type="button" 
+            id="tab-narration-separate" 
+            onclick="switchNarrationMode('separate')" 
+            class="flex-1 md:flex-none px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md text-xs"
+          >
+            <i data-lucide="mic" class="w-3.5 h-3.5"></i> Narração Separada (CapCut)
+          </button>
+          <button 
+            type="button" 
+            id="tab-narration-embedded" 
+            onclick="switchNarrationMode('embedded')" 
+            class="flex-1 md:flex-none px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition text-xs"
+          >
+            <i data-lucide="film" class="w-3.5 h-3.5"></i> Narração Embutida no Flow
+          </button>
+        </div>
+      </div>
+
+      <!-- Instruções de Uso no Flow -->
+      <div id="flow-instructions-box" class="p-4 rounded-xl bg-indigo-950/40 border border-indigo-800/40 text-xs text-indigo-200 space-y-1.5">
+        <p class="font-bold text-indigo-100 flex items-center gap-1.5 text-sm">
+          <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i> Como produzir no Google Flow / Studio:
+        </p>
+        <p id="flow-instruction-step1">1. No Flow, envie a foto da sua <strong>Modelo Ruiva</strong> (<code class="bg-indigo-900/60 px-1 py-0.5 rounded text-[11px]">03_REFERENCIAS/Modelo e ambiente 1.jpeg</code>) e a imagem do <strong>Ambiente Selecionado</strong>.</p>
+        <p id="flow-instruction-step2">2. Use o <strong>Prompt de Imagem (Item 1)</strong> para posicionar sua modelo no ambiente usando exatamente o produto.</p>
+        <p id="flow-instruction-step3">3. Use os <strong>Prompts de Vídeo (Cena 1 e Cena 2)</strong> para animar os clipes de 0 a 20s com movimentos contínuos rápidos (esticar tecido, passar mãos na cintura, virar de perfil e apontar pro carrinho).</p>
+        <p id="flow-instruction-step4">4. No CapCut, sincronize os clipes com o <strong>Áudio da Locução</strong> em PT-BR (Voz Jéssica a 1.15x).</p>
+      </div>
+
+      <!-- 1. Prompt Imagem da Modelo no Ambiente Vestindo o Produto -->
+      <div class="glass-card rounded-2xl p-6 border border-amber-500/30 bg-amber-500/5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold text-xs uppercase tracking-wide">1. Prompt de Imagem (Keyframe Base)</span>
+            <span class="text-xs text-gray-300 font-medium">Modelo ruiva no ambiente selecionado <strong>vestindo o seu produto</strong></span>
+          </div>
+          <button onclick="copyToClipboard('flow-model-image', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-amber-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt Imagem
+          </button>
+        </div>
+        <p class="text-[11px] text-gray-400 mb-2.5">Gera a fotografia hiper-realista da modelo ruiva no ambiente escolhido com a iluminação exata de boutique e o produto vestido antes da animação.</p>
+        <textarea id="flow-model-image" readonly class="w-full h-28 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-mono resize-none focus:outline-none focus:border-amber-500"></textarea>
+      </div>
+
+      <!-- 2. Prompt Visual Cena 1 -->
+      <div class="glass-card rounded-2xl p-6 border border-gray-800">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-pink-500/20 text-pink-300 font-bold text-xs uppercase tracking-wide">2. Animação de Vídeo - Cena 1 (0 a 10s)</span>
+            <span id="scene-1-mode-tag" class="text-xs text-gray-400">Gancho forte + Esticar tecido + Cortes rápidos de cores</span>
+          </div>
+          <button onclick="copyToClipboard('flow-scene-1', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-pink-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt
+          </button>
+        </div>
+        <textarea id="flow-scene-1" readonly class="w-full h-28 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-mono resize-none focus:outline-none focus:border-pink-500"></textarea>
+      </div>
+
+      <!-- 3. Prompt Visual Cena 2 -->
+      <div class="glass-card rounded-2xl p-6 border border-gray-800">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 font-bold text-xs uppercase tracking-wide">3. Animação de Vídeo - Cena 2 (10 a 20s)</span>
+            <span id="scene-2-mode-tag" class="text-xs text-gray-400">Puxão no tecido + Virada 360 + Apontar para o carrinho</span>
+          </div>
+          <button onclick="copyToClipboard('flow-scene-2', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-pink-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt
+          </button>
+        </div>
+        <textarea id="flow-scene-2" readonly class="w-full h-28 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-mono resize-none focus:outline-none focus:border-pink-500"></textarea>
+      </div>
+
+      <!-- 4. Áudio PT-BR Completo para Locução -->
+      <div class="glass-card rounded-2xl p-6 border border-gray-800">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wide">4. Áudio da Locução (PT-BR)</span>
+            <span class="text-xs text-gray-400">Cadência rápida estilo TikTok Shop (Voz no CapCut / ElevenLabs)</span>
+          </div>
+          <button onclick="copyToClipboard('flow-audio', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-emerald-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Áudio
+          </button>
+        </div>
+        <textarea id="flow-audio" readonly class="w-full h-24 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-sans resize-none focus:outline-none focus:border-emerald-500"></textarea>
+
+        <!-- Card de Recomendação de Voz para Alta Conversão -->
+        <div class="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-teal-950/30 border border-emerald-800/40 space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-sm">
+              <i data-lucide="mic" class="w-4 h-4 text-emerald-400"></i> Qual voz usar no vídeo? (Opções Gratuitas & Clonagem)
+            </span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Padrão Ouro TikTok Shop</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-300 pt-1">
+            <div class="p-3 rounded-lg bg-black/40 border border-emerald-900/40">
+              <span class="font-semibold text-white block mb-1">1. Opção 100% Grátis: CapCut (Jéssica / Moça Fofa)</span>
+              <p class="text-[11px] text-gray-400 leading-relaxed">No CapCut (celular ou PC), cole o texto acima em <em>Texto para Fala</em> e selecione a voz <strong>Jéssica</strong> ou <strong>Moça Fofa</strong> com velocidade em <strong>1.15x a 1.20x</strong>. É o padrão dos vídeos de provador que mais vendem no Brasil.</p>
+            </div>
+            <div class="p-3 rounded-lg bg-black/40 border border-emerald-900/40">
+              <span class="font-semibold text-white block mb-1">2. Clonagem Gratuita: Fish Audio ou ElevenLabs</span>
+              <p class="text-[11px] text-gray-400 leading-relaxed">Para clonar uma voz real, acesse <strong>fish.audio</strong> (créditos gratuitos) ou o plano free do <strong>ElevenLabs</strong> (10.000 caracteres/mês). Basta subir um áudio de 20s para clonar e gerar a fala.</p>
+            </div>
+          </div>
+          <p class="text-[11px] text-emerald-400/90 italic pt-1">
+            * Dica estratégica: O Google Flow gera o visual com perfeição de movimentos. Gerar a voz em separado no CapCut garante sincronia perfeita, sotaque 100% brasileiro e naturalidade que converte em vendas.
+          </p>
+        </div>
+      </div>
+
+      <!-- Resumo da Direção de Movimento -->
+      <div class="p-4 rounded-xl bg-gray-900 border border-gray-800 text-xs text-gray-300 flex items-start gap-3">
+        <i data-lucide="film" class="w-5 h-5 text-pink-400 flex-shrink-0 mt-0.5"></i>
+        <div>
+          <span class="font-bold text-white block mb-0.5">Direção de Movimentos da Modelo (Ritmo de Alta Conversão):</span>
+          <p id="flow-movements" class="text-gray-400 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <!-- Botões de Ação Inferiores no Passo 4 -->
+      <div class="pt-4 flex items-center justify-between border-t border-gray-800/80">
+        <button onclick="goToStep(3)" class="py-2.5 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar para Seleção de Ambiente
+        </button>
+        <button onclick="resetWizard()" class="py-2.5 px-5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition active:scale-95 shadow-lg shadow-pink-500/20">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Criar Outro Vídeo
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 px-4 py-3 rounded-xl bg-emerald-500 text-white font-semibold text-xs shadow-2xl flex items-center gap-2 z-50 pointer-events-none">
+    <i data-lucide="check" class="w-4 h-4"></i>
+    <span id="toast-message">Copiado com sucesso!</span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-[#070a12]/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center">
+    <div class="w-14 h-14 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin mb-4"></div>
+    <p id="loading-text" class="text-base font-bold text-white">Analisando vídeo do concorrente...</p>
+    <p class="text-xs text-gray-400 mt-1">Extraindo ritmo, ganchos e gerando 3 roteiros otimizados</p>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT DO WIZARD -->
+  <!-- ========================================== -->
+  <script>
+    // Estado Global da Criação
+    let currentStep = 1;
+    let selectedFormat = 'UGC-POV';
+    let selectedNarrationMode = 'separate'; // 'separate' ou 'embedded'
+    let competitorUrl = '';
+    let productName = '';
+    let generatedScripts = [];
+    let selectedScript = null;
+    let selectedEnvironment = 'ambiente_1';
+    let environmentsList = [];
+    let autoDetectTimeout = null;
+    let flowDataCache = null;
+
+    // Detecção Automática do Nome do Produto por Link
+    function handleCompetitorUrlInput(val) {
+      clearTimeout(autoDetectTimeout);
+      const trimmed = val ? val.trim() : '';
+      if (trimmed && (trimmed.includes('tiktok.com') || trimmed.startsWith('http'))) {
+        autoDetectTimeout = setTimeout(() => {
+          triggerAutoProductDetection(trimmed);
+        }, 700);
+      }
+    }
+
+    function handleCompetitorUrlPaste(e) {
+      setTimeout(() => {
+        const val = document.getElementById('competitor-url').value;
+        if (val) triggerAutoProductDetection(val.trim());
+      }, 100);
+    }
+
+    function handleProductInput(val) {
+      const trimmed = val ? val.trim() : '';
+      if (trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
+        clearTimeout(autoDetectTimeout);
+        autoDetectTimeout = setTimeout(() => {
+          triggerAutoProductDetection(trimmed);
+        }, 300);
+      }
+    }
+
+    function handleProductPaste(e) {
+      setTimeout(() => {
+        const val = document.getElementById('product-input').value;
+        if (val && (val.startsWith('http://') || val.startsWith('https://'))) {
+          triggerAutoProductDetection(val.trim());
+        }
+      }, 100);
+    }
+
+    async function triggerAutoProductDetection(url) {
+      const statusEl = document.getElementById('product-detection-status');
+      const productInput = document.getElementById('product-input');
+      if (statusEl) {
+        statusEl.className = 'text-xs text-pink-400 font-medium flex items-center gap-1.5 mt-1.5';
+        statusEl.innerHTML = '<span class="w-3 h-3 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin"></span> Detectando produto automaticamente...';
+      }
+
+      try {
+        const res = await fetch('/api/wizard/extract-product-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        const data = await res.json();
+        if (data.success && data.product_name) {
+          productInput.value = data.product_name;
+          productName = data.product_name;
+          updateProductBadges(productName);
+          if (statusEl) {
+            statusEl.className = 'text-xs text-emerald-400 font-semibold flex items-center gap-1.5 mt-1.5';
+            statusEl.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Produto identificado: <strong>${data.product_name}</strong>`;
+            lucide.createIcons();
+          }
+          showToast(`Produto identificado: ${data.product_name}`);
+        } else {
+          if (statusEl) statusEl.classList.add('hidden');
+        }
+      } catch (err) {
+        if (statusEl) statusEl.classList.add('hidden');
+      }
+    }
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+      await loadEnvironments();
+    });
+
+    // Formato
+    function updateFormatSelection(radio) {
+      selectedFormat = radio.value;
+      document.querySelectorAll('.format-option').forEach(el => {
+        el.classList.remove('border-pink-500/40', 'bg-pink-500/10');
+        el.classList.add('border-gray-800', 'bg-gray-900/60');
+      });
+      radio.closest('.format-option').classList.remove('border-gray-800', 'bg-gray-900/60');
+      radio.closest('.format-option').classList.add('border-pink-500/40', 'bg-pink-500/10');
+    }
+
+    // Modo de Narração
+    function updateNarrationSelection(radio) {
+      selectedNarrationMode = radio.value;
+      document.querySelectorAll('.narration-option').forEach(el => {
+        el.classList.remove('border-emerald-500/40', 'bg-emerald-500/10', 'border-purple-500/40', 'bg-purple-500/10');
+        el.classList.add('border-gray-800', 'bg-gray-900/60');
+      });
+      const parent = radio.closest('.narration-option');
+      parent.classList.remove('border-gray-800', 'bg-gray-900/60');
+      if (radio.value === 'separate') {
+        parent.classList.add('border-emerald-500/40', 'bg-emerald-500/10');
+      } else {
+        parent.classList.add('border-purple-500/40', 'bg-purple-500/10');
+      }
+    }
+
+    // Carregar Ambientes Pré-Configurados
+    async function loadEnvironments() {
+      try {
+        const res = await fetch('/api/wizard/environments');
+        const data = await res.json();
+        environmentsList = data.environments || [];
+        renderEnvironments();
+      } catch (err) {
+        console.error("Erro ao carregar ambientes:", err);
+      }
+    }
+
+    // Renderizar Cards de Ambientes
+    function renderEnvironments() {
+      const container = document.getElementById('environments-container');
+      if (!container) return;
+
+      container.innerHTML = environmentsList.map((env, idx) => {
+        const isSelected = env.id === selectedEnvironment;
+        return `
+          <div 
+            onclick="selectEnvironment('${env.id}')"
+            id="env-card-${env.id}"
+            class="glass-card rounded-2xl overflow-hidden border cursor-pointer transition-all duration-200 ${isSelected ? 'border-pink-500 ring-2 ring-pink-500/40 bg-pink-500/5' : 'border-gray-800 hover:border-gray-700'}"
+          >
+            <div class="h-44 w-full relative overflow-hidden bg-gray-900">
+              <img src="${env.image_url}" class="w-full h-full object-cover" alt="${env.title}">
+              <div class="absolute inset-0 bg-gradient-to-t from-[#0b0f19] via-transparent to-transparent"></div>
+              <div class="absolute bottom-2 left-3 right-3 flex items-center justify-between">
+                <span class="text-xs font-bold text-white px-2 py-0.5 rounded bg-black/60 backdrop-blur">${env.title}</span>
+                ${isSelected ? '<span class="w-5 h-5 rounded-full bg-pink-500 text-white flex items-center justify-center text-xs"><i data-lucide="check" class="w-3 h-3"></i></span>' : ''}
+              </div>
+            </div>
+            <div class="p-4 space-y-2">
+              <p class="text-xs text-gray-300 font-medium">${env.vibe}</p>
+              <div class="p-2.5 rounded-lg bg-black/40 border border-gray-800/80">
+                <span class="text-[10px] text-pink-400 font-bold block uppercase tracking-wider mb-0.5">Iluminação Exata:</span>
+                <p class="text-[11px] text-gray-400 leading-tight">${env.lighting}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function selectEnvironment(envId) {
+      selectedEnvironment = envId;
+      renderEnvironments();
+    }
+
+    // Passo 1: Submissão e Análise
+    async function handleAnalyzeSubmit(e) {
+      e.preventDefault();
+      competitorUrl = document.getElementById('competitor-url').value.trim();
+      productName = document.getElementById('product-input').value.trim();
+
+      if (!competitorUrl && !productName) {
+        showToast("Por favor, insira o link do vídeo ou do produto.");
+        return;
+      }
+
+      // Se o usuário colou o link no campo de produto e deixou o concorrente vazio
+      if (!competitorUrl && productName.startsWith("http")) {
+        competitorUrl = productName;
+      }
+
+      if (productName && !productName.startsWith("http")) {
+        updateProductBadges(productName);
+        showLoading(true, `Analisando criativo para: ${productName}...`);
+      } else {
+        showLoading(true, "Analisando vídeo e identificando o produto do link...");
+      }
+
+      try {
+        const res = await fetch('/api/wizard/analyze-and-generate-scripts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video_format: selectedFormat,
+            competitor_url: competitorUrl,
+            product_input: productName
+          })
+        });
+
+        const data = await res.json();
+        showLoading(false);
+
+        if (data.scripts && data.scripts.length > 0) {
+          generatedScripts = data.scripts;
+          if (data.product_name) {
+            productName = data.product_name;
+            document.getElementById('product-input').value = productName;
+            updateProductBadges(productName);
+          }
+          renderScripts();
+          goToStep(2);
+        } else {
+          showToast("Erro ao gerar roteiros. Tente novamente.");
+        }
+      } catch (err) {
+        showLoading(false);
+        console.error(err);
+        showToast("Erro de conexão ao analisar o concorrente.");
+      }
+    }
+
+    function updateProductBadges(name) {
+      const b2 = document.getElementById('step2-product-badge');
+      const b3 = document.getElementById('step3-product-badge');
+      const b4 = document.getElementById('step4-product-badge');
+      if (b2) b2.textContent = name;
+      if (b3) b3.textContent = name;
+      if (b4) b4.textContent = name;
+    }
+
+    // Renderizar os 3 Roteiros
+    function renderScripts() {
+      const container = document.getElementById('scripts-container');
+      if (!container) return;
+
+      container.innerHTML = generatedScripts.map(script => {
+        return `
+          <div class="glass-card rounded-2xl p-6 border border-gray-800 flex flex-col justify-between glass-card-hover transition-all">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-pink-500/20 text-pink-300">
+                  Opção ${script.id}
+                </span>
+                <span class="text-[11px] text-gray-400 font-medium">9:16 Vertical</span>
+              </div>
+
+              <div>
+                <h3 class="text-base font-bold text-white">${script.angle_title}</h3>
+                <p class="text-xs text-pink-400 mt-0.5">${script.target_emotion}</p>
+              </div>
+
+              <!-- Cena 1 -->
+              <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
+                <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                  <i data-lucide="play" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Gancho & Cores
+                </span>
+                <p class="text-xs text-gray-200 leading-relaxed">${script.scene_1_text}</p>
+              </div>
+
+              <!-- Cena 2 -->
+              <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
+                <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                  <i data-lucide="play" class="w-3 h-3 text-purple-400"></i> Cena 2 (10 a 20s) - CTA Carrinho
+                </span>
+                <p class="text-xs text-gray-200 leading-relaxed">${script.scene_2_text}</p>
+              </div>
+
+              <!-- Movimentos da Modelo -->
+              <div class="p-2.5 rounded-lg bg-gray-900/80 border border-gray-800/80">
+                <span class="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Movimentação da Modelo:</span>
+                <p class="text-[11px] text-gray-400 leading-tight">${script.movements_summary}</p>
+              </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="pt-5 mt-4 border-t border-gray-800/80 flex items-center gap-2">
+              <button 
+                onclick="approveScript(${script.id})"
+                class="flex-1 py-2.5 px-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95"
+              >
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> Aprovar Roteiro
+              </button>
+              <button 
+                onclick="rejectScript(${script.id})"
+                class="py-2.5 px-3 bg-gray-800/80 hover:bg-gray-800 text-gray-400 hover:text-white text-xs font-semibold rounded-xl transition"
+                title="Descartar opção"
+              >
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // Aprovar Roteiro e ir para Passo 3
+    function approveScript(scriptId) {
+      selectedScript = generatedScripts.find(s => s.id === scriptId);
+      if (!selectedScript) return;
+      showToast(`Roteiro ${scriptId} aprovado! Selecione o ambiente.`);
+      goToStep(3);
+    }
+
+    function rejectScript(scriptId) {
+      generatedScripts = generatedScripts.filter(s => s.id !== scriptId);
+      if (generatedScripts.length === 0) {
+        showToast("Você descartou todas as opções. Gere novamente.");
+        goToStep(1);
+      } else {
+        renderScripts();
+        showToast(`Opção ${scriptId} descartada.`);
+      }
+    }
+
+    // Passo 4: Gerar Prompt Master Google Flow
+    async function handleGenerateFlowPrompt() {
+      if (!selectedScript) {
+        showToast("Selecione um roteiro primeiro.");
+        goToStep(2);
+        return;
+      }
+
+      showLoading(true, "Gerando prompts para o Google Flow e áudio PT-BR...");
+
+      try {
+        const res = await fetch('/api/wizard/generate-flow-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selected_script_id: selectedScript.id,
+            environment_id: selectedEnvironment,
+            script_data: selectedScript,
+            product_name: productName,
+            video_format: selectedFormat,
+            narration_mode: selectedNarrationMode
+          })
+        });
+
+        const data = await res.json();
+        showLoading(false);
+
+        if (data.success) {
+          flowDataCache = data;
+          document.getElementById('flow-model-image').value = data.model_image_prompt;
+          document.getElementById('flow-audio').value = data.audio_script;
+          document.getElementById('flow-movements').textContent = data.movements_direction;
+          if (data.product_name) {
+            updateProductBadges(data.product_name);
+          }
+          applyNarrationModeToPrompts(selectedNarrationMode);
+          goToStep(4);
+        } else {
+          showToast("Erro ao gerar prompts.");
+        }
+      } catch (err) {
+        showLoading(false);
+        console.error(err);
+        showToast("Erro ao gerar prompts do Flow.");
+      }
+    }
+
+    // Alternador Interativo de Modo de Narração no Passo 4
+    function switchNarrationMode(mode) {
+      selectedNarrationMode = mode;
+      applyNarrationModeToPrompts(mode);
+      showToast(mode === 'embedded' ? 'Alternado para Narração Embutida no Flow!' : 'Alternado para Narração Separada (CapCut)!');
+    }
+
+    function applyNarrationModeToPrompts(mode) {
+      if (!flowDataCache) return;
+
+      const btnSep = document.getElementById('tab-narration-separate');
+      const btnEmb = document.getElementById('tab-narration-embedded');
+      const badge = document.getElementById('current-narration-badge');
+      const desc = document.getElementById('narration-mode-desc');
+      const s1ModeTag = document.getElementById('scene-1-mode-tag');
+      const s2ModeTag = document.getElementById('scene-2-mode-tag');
+      const step4Inst = document.getElementById('flow-instruction-step4');
+
+      if (mode === 'embedded') {
+        if (btnEmb) {
+          btnEmb.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md text-xs';
+        }
+        if (btnSep) {
+          btnSep.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition text-xs';
+        }
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 uppercase';
+          badge.textContent = 'Narração Embutida no Flow';
+        }
+        if (desc) {
+          desc.textContent = 'Prompts com falas em português (PT-BR) inseridas direto no Flow. A modelo mantém o celular no rosto, garantindo sincronia perfeita sem distorção labial.';
+        }
+        if (s1ModeTag) {
+          s1ModeTag.textContent = 'Esticar tecido + Viradas rápidas + ÁUDIO EMBUTIDO NA CENA';
+        }
+        if (s2ModeTag) {
+          s2ModeTag.textContent = 'Esticar tecido + Apontar para o carrinho + ÁUDIO EMBUTIDO NA CENA';
+        }
+        if (step4Inst) {
+          step4Inst.innerHTML = '4. <strong>Narração Embutida:</strong> O próprio Flow gera os vídeos já falados em português brasileiro natural!';
+        }
+
+        document.getElementById('flow-scene-1').value = flowDataCache.scene_1_prompt_embedded || flowDataCache.scene_1_prompt;
+        document.getElementById('flow-scene-2').value = flowDataCache.scene_2_prompt_embedded || flowDataCache.scene_2_prompt;
+      } else {
+        if (btnSep) {
+          btnSep.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md text-xs';
+        }
+        if (btnEmb) {
+          btnEmb.className = 'flex-1 md:flex-none px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition text-xs';
+        }
+        if (badge) {
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase';
+          badge.textContent = 'Narração Separada (CapCut)';
+        }
+        if (desc) {
+          desc.textContent = 'Prompts visuais limpos focados 100% em cortes velozes e teste de elasticidade no Flow + locução narrada no CapCut (Voz Jéssica a 1.15x).';
+        }
+        if (s1ModeTag) {
+          s1ModeTag.textContent = 'Gancho forte + Esticar tecido + Cortes rápidos de cores';
+        }
+        if (s2ModeTag) {
+          s2ModeTag.textContent = 'Puxão no tecido + Virada 360 + Apontar para o carrinho';
+        }
+        if (step4Inst) {
+          step4Inst.innerHTML = '4. No CapCut, sincronize os clipes com o <strong>Áudio da Locução</strong> em PT-BR (Voz Jéssica a 1.15x).';
+        }
+
+        document.getElementById('flow-scene-1').value = flowDataCache.scene_1_prompt_separate || flowDataCache.scene_1_prompt;
+        document.getElementById('flow-scene-2').value = flowDataCache.scene_2_prompt_separate || flowDataCache.scene_2_prompt;
+      }
+    }
+
+    // Navegação via clique no Stepper
+    function navigateStep(targetStep) {
+      if (targetStep === currentStep) return;
+      if (targetStep === 1) {
+        goToStep(1);
+        return;
+      }
+      if (targetStep === 2) {
+        if (generatedScripts && generatedScripts.length > 0) {
+          goToStep(2);
+        } else {
+          showToast("Analise o vídeo no Passo 1 primeiro para gerar os roteiros.");
+        }
+        return;
+      }
+      if (targetStep === 3) {
+        if (selectedScript) {
+          goToStep(3);
+        } else if (generatedScripts && generatedScripts.length > 0) {
+          showToast("Aprove um dos roteiros no Passo 2 primeiro.");
+          goToStep(2);
+        } else {
+          showToast("Complete os passos anteriores primeiro.");
+        }
+        return;
+      }
+      if (targetStep === 4) {
+        const p1 = document.getElementById('flow-scene-1').value;
+        if (p1) {
+          goToStep(4);
+        } else if (selectedScript) {
+          showToast("Clique em 'Gerar Prompts & Áudio' no Passo 3.");
+          goToStep(3);
+        } else {
+          showToast("Complete os passos anteriores primeiro.");
+        }
+      }
+    }
+
+    // Controle de Passos (Stepper)
+    function goToStep(stepNumber) {
+      currentStep = stepNumber;
+
+      // Ocultar todas as seções
+      for (let i = 1; i <= 4; i++) {
+        const section = document.getElementById(`step-${i}`);
+        const badge = document.getElementById(`badge-step-${i}`);
+        if (section) section.classList.add('hidden');
+        if (badge) {
+          badge.className = 'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all';
+          if (i < currentStep) {
+            badge.classList.add('step-done');
+            badge.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+          } else if (i === currentStep) {
+            badge.classList.add('step-active');
+            badge.textContent = i;
+          } else {
+            badge.classList.add('step-pending');
+            badge.textContent = i;
+          }
+        }
+      }
+
+      // Linha de progresso
+      const progressPercent = ((currentStep - 1) / 3) * 100;
+      document.getElementById('step-line-progress').style.width = `${progressPercent}%`;
+
+      // Mostrar seção atual
+      const currentSection = document.getElementById(`step-${currentStep}`);
+      if (currentSection) currentSection.classList.remove('hidden');
+
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Reiniciar
+    function resetWizard() {
+      currentStep = 1;
+      selectedScript = null;
+      generatedScripts = [];
+      goToStep(1);
+    }
+
+    // Copiar para a área de transferência
+    function copyToClipboard(elementId, btn) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.select();
+      navigator.clipboard.writeText(el.value).then(() => {
+        showToast("Copiado para a área de transferência!");
+        if (btn) {
+          const original = btn.innerHTML;
+          btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Copiado!';
+          lucide.createIcons();
+          setTimeout(() => {
+            btn.innerHTML = original;
+            lucide.createIcons();
+          }, 2000);
+        }
+      });
+    }
+
+    // Toast
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-message');
+      if (!toast || !msgEl) return;
+      msgEl.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // Loading
+    function showLoading(show, text = "") {
+      const overlay = document.getElementById('loading-overlay');
+      const textEl = document.getElementById('loading-text');
+      if (overlay) {
+        if (show) {
+          if (textEl && text) textEl.textContent = text;
+          overlay.classList.remove('hidden');
+        } else {
+          overlay.classList.add('hidden');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
