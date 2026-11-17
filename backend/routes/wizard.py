@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
-from backend.database import get_db, DB_PATH
+from backend.database import get_db, DB_PATH, save_generation_to_supabase
 from backend.services.tiktok_collector import extract_tiktok_ids, fetch_tiktok_oembed, fetch_public_metadata_ytdlp
 from backend.services.ai_analyzer import run_llm_json
 
@@ -420,8 +420,20 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
 4. No CapCut (ou ElevenLabs / Fish Audio), gere a locução em PT-BR usando o 'Áudio da Locução' abaixo (Voz Jéssica a 1.15x).
 5. Junte os vídeos com o áudio no CapCut para sincronia perfeita e máxima conversão de vendas."""
 
+    supabase_saved = save_generation_to_supabase({
+        "product_name": prod,
+        "video_format": req.video_format,
+        "environment_id": env_id,
+        "narration_mode": narration_mode,
+        "model_image_prompt": model_image_prompt,
+        "scene_1_prompt": active_scene_1,
+        "scene_2_prompt": active_scene_2,
+        "audio_script": full_audio
+    })
+
     return {
         "success": True,
+        "supabase_saved": supabase_saved,
         "product_name": prod,
         "environment_title": env_title,
         "narration_mode": narration_mode,
