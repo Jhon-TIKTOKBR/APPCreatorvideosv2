@@ -3,7 +3,10 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 import httpx
-import yt_dlp
+try:
+    import yt_dlp
+except ImportError:
+    yt_dlp = None
 
 logger = logging.getLogger(__name__)
 

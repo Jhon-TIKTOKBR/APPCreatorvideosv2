@@ -8,12 +8,13 @@ from backend.database import engine, Base, SessionLocal
 from backend.services.prompt_engine import seed_default_templates
 from backend.routes import competitors, products, videos, analysis, patterns, ideas, prompts, wizard
 
-# Criação das tabelas no banco de dados SQLite
-Base.metadata.create_all(bind=engine)
-
-# Inicialização dos templates padrão
-with SessionLocal() as db:
-    seed_default_templates(db)
+# Criação das tabelas no banco de dados SQLite (protegido para ambientes Serverless)
+try:
+    Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        seed_default_templates(db)
+except Exception as e:
+    print(f"Aviso ao inicializar banco local: {e}")
 
 app = FastAPI(
     title="TikTok Shop AI Studio - Inteligência de Concorrentes",
@@ -42,8 +43,8 @@ app.include_router(wizard.router)
 
 # Diretório da interface estática (SPA)
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
-os.makedirs(STATIC_DIR, exist_ok=True)
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 REFS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "03_REFERENCIAS")
 if os.path.exists(REFS_DIR):
