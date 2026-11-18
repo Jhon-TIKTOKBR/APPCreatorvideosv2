@@ -219,75 +219,190 @@
             </div>
           </div>
 
-          <!-- Links de Entrada -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            <!-- Link do Concorrente -->
-            <div>
-              <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
-                <span>Link do Vídeo do Concorrente (TikTok)</span>
-                <span class="text-[10px] text-pink-400 font-normal">Identifica o produto</span>
-              </label>
-              <div class="relative">
-                <i data-lucide="link" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input 
-                  type="url" 
-                  id="competitor-url" 
-                  required
-                  oninput="handleCompetitorUrlInput(this.value)"
-                  onpaste="handleCompetitorUrlPaste(event)"
-                  placeholder="https://www.tiktok.com/@concorrente/video/..." 
-                  class="w-full bg-[#101626] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition"
-                >
-              </div>
-              <p class="text-[11px] text-gray-400 mt-1">Ao colar o link, o sistema extrai o ritmo e o produto do vídeo.</p>
+          <!-- Estratégia de Entrada: 2 Opções Confiáveis -->
+          <div class="space-y-4">
+            <label class="block text-sm font-semibold text-gray-200">Escolha como fornecer o conteúdo</label>
+            
+            <!-- Botões de Troca de Modo (Abas) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button 
+                type="button" 
+                id="btn-mode-photos"
+                onclick="switchCreationMode('photos')"
+                class="flex items-center justify-center gap-2 p-3.5 rounded-xl border border-pink-500 bg-pink-500/10 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-pink-500/15"
+              >
+                <i data-lucide="camera" class="w-4 h-4 text-pink-400"></i>
+                <span>📸 Fotos / Prints + Descrição (Recomendado)</span>
+              </button>
+
+              <button 
+                type="button" 
+                id="btn-mode-video"
+                onclick="switchCreationMode('video')"
+                class="flex items-center justify-center gap-2 p-3.5 rounded-xl border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-white font-medium text-xs sm:text-sm transition"
+              >
+                <i data-lucide="upload-cloud" class="w-4 h-4 text-purple-400"></i>
+                <span>📤 Subir Vídeo (.mp4 baixado)</span>
+              </button>
             </div>
 
-            <!-- Produto Alvo -->
-            <div>
-              <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
-                <span>Nome ou Link do Seu Produto</span>
-                <span class="text-[10px] text-emerald-400 font-normal">Automático ou manual</span>
-              </label>
-              <div class="relative">
-                <i data-lucide="shopping-bag" class="w-4 h-4 text-pink-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input 
-                  type="text" 
-                  id="product-input" 
-                  oninput="handleProductInput(this.value)"
-                  onpaste="handleProductPaste(event)"
-                  placeholder="Ex: Vestido Canelado, Tênis Branco, Bolsa Couro..." 
-                  value=""
-                  class="w-full bg-[#101626] border border-pink-500/40 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-medium"
+            <!-- PAINEL 1: FOTOS / PRINTS + DESCRIÇÃO -->
+            <div id="panel-photos" class="space-y-4 pt-1">
+              <!-- Upload de Imagens / Prints -->
+              <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="images" class="w-4 h-4 text-pink-400"></i>
+                    Fotos ou Prints do Produto (1 a 4 imagens)
+                  </span>
+                  <span class="text-[10px] text-pink-400 font-normal">Frente, costas, bolsos, tecido</span>
+                </label>
+                
+                <div 
+                  id="dropzone-photos"
+                  onclick="document.getElementById('input-photos').click()"
+                  ondragover="handleDragOver(event)"
+                  ondragleave="handleDragLeave(event)"
+                  ondrop="handleDropPhotos(event)"
+                  class="border-2 border-dashed border-gray-700 hover:border-pink-500/60 bg-gray-900/40 rounded-xl p-5 text-center cursor-pointer transition group"
                 >
+                  <input type="file" id="input-photos" accept="image/png,image/jpeg,image/webp,image/jpg" multiple class="hidden" onchange="handleImageFileSelect(event)">
+                  <div class="flex flex-col items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-pink-500/10 text-pink-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                      <i data-lucide="image-plus" class="w-5 h-5"></i>
+                    </div>
+                    <p class="text-xs sm:text-sm text-gray-200 font-semibold">Clique para escolher ou arraste os prints do produto aqui</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Mostre frente, costas, zíper, tecido ou fotos do anúncio (PNG, JPG, WebP)</p>
+                  </div>
+                </div>
+
+                <!-- Preview das Imagens Selecionadas -->
+                <div id="photos-preview-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 hidden"></div>
               </div>
-              <!-- Status de Detecção Automática -->
-              <div id="product-detection-status" class="hidden text-xs text-pink-400 font-medium flex items-center gap-1.5 mt-1.5"></div>
-              <p class="text-[11px] text-gray-400 mt-1">Digite o nome ou cole o link do produto. Se deixar vazio, identificamos pelo vídeo ou legenda.</p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Nome do Produto -->
+                <div>
+                  <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                    <span>Nome do Seu Produto</span>
+                    <span class="text-[10px] text-emerald-400 font-normal">Manual ou pela IA</span>
+                  </label>
+                  <div class="relative">
+                    <i data-lucide="tag" class="w-4 h-4 text-pink-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input 
+                      type="text" 
+                      id="product-input" 
+                      placeholder="Ex: Vestido Canelado com Zíper, Tênis Branco..." 
+                      class="w-full bg-[#101626] border border-pink-500/40 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-medium"
+                    >
+                  </div>
+                  <p class="text-[11px] text-gray-400 mt-1">Se deixar vazio, a IA deduz o nome a partir das fotos e descrição.</p>
+                </div>
+
+                <!-- Descrição e Detalhes do Produto -->
+                <div>
+                  <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                      <i data-lucide="align-left" class="w-4 h-4 text-pink-400"></i>
+                      Detalhes do Produto / Oferta
+                    </span>
+                    <span class="text-[10px] text-pink-400 font-normal">Enriquece os roteiros</span>
+                  </label>
+                  <div class="relative">
+                    <textarea 
+                      id="product-description" 
+                      rows="2"
+                      placeholder="Ex: Tecido canelado premium, zíper frontal dourado, bolso funcional, não marca a barriga, veste do 38 ao 44, 4 cores..." 
+                      class="w-full bg-[#101626] border border-gray-800 rounded-xl p-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition resize-none"
+                    ></textarea>
+                  </div>
+                  <p class="text-[11px] text-gray-400 mt-1">Destaque os detalhes que você quer ver a modelo mostrando no vídeo.</p>
+                </div>
+              </div>
             </div>
 
-            <!-- Legenda ou Fala do Vídeo do Concorrente (Novo campo inteligente) -->
-            <div class="md:col-span-2">
-              <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
-                <span class="flex items-center gap-1.5">
-                  <i data-lucide="message-square-quote" class="w-4 h-4 text-pink-400"></i>
-                  Fala / Legenda do Vídeo do Concorrente (Opcional & Recomendado)
-                </span>
-                <span class="text-[10px] text-pink-400 font-normal">Garante 100% de precisão</span>
-              </label>
-              <div class="relative">
-                <textarea 
-                  id="competitor-caption" 
-                  rows="2"
-                  oninput="handleCompetitorCaptionInput(this.value)"
-                  placeholder="Cole aqui o que a pessoa fala no vídeo ou a legenda dele (ex: 'Meninas, comprei essa bolsa transversal de couro e olha a perfeição das costuras...')" 
-                  class="w-full bg-[#101626] border border-gray-800 rounded-xl p-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition resize-none"
-                ></textarea>
+            <!-- PAINEL 2: UPLOAD DE VÍDEO (.MP4 BAIXADO) -->
+            <div id="panel-video" class="space-y-4 pt-1 hidden">
+              <div>
+                <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="video" class="w-4 h-4 text-purple-400"></i>
+                    Vídeo do Concorrente (.mp4, .mov, .webm)
+                  </span>
+                  <span class="text-[10px] text-purple-400 font-normal">Baixado sem marca d'água</span>
+                </label>
+
+                <div 
+                  id="dropzone-video"
+                  onclick="document.getElementById('input-video').click()"
+                  ondragover="handleDragOver(event)"
+                  ondragleave="handleDragLeave(event)"
+                  ondrop="handleDropVideo(event)"
+                  class="border-2 border-dashed border-gray-700 hover:border-purple-500/60 bg-gray-900/40 rounded-xl p-5 text-center cursor-pointer transition group"
+                >
+                  <input type="file" id="input-video" accept="video/mp4,video/quicktime,video/webm,audio/mp3,audio/wav,audio/m4a" class="hidden" onchange="handleVideoFileSelect(event)">
+                  <div class="flex flex-col items-center justify-center">
+                    <div class="w-10 h-10 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                      <i data-lucide="file-video" class="w-5 h-5"></i>
+                    </div>
+                    <p class="text-xs sm:text-sm text-gray-200 font-semibold">Clique para escolher ou arraste o arquivo de vídeo aqui</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">MP4, MOV, WebM ou Áudio. O sistema transcreve a fala e modela o ritmo automaticamente.</p>
+                  </div>
+                </div>
+
+                <!-- Preview do Vídeo Selecionado -->
+                <div id="video-preview-container" class="mt-3 hidden p-3 rounded-xl bg-gray-900/80 border border-gray-800 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center flex-shrink-0">
+                      <i data-lucide="film" class="w-5 h-5"></i>
+                    </div>
+                    <div class="truncate">
+                      <p id="video-file-name" class="text-xs sm:text-sm font-bold text-white truncate"></p>
+                      <p id="video-file-size" class="text-[11px] text-gray-400"></p>
+                    </div>
+                  </div>
+                  <button type="button" onclick="removeVideoFile(event)" class="text-gray-400 hover:text-rose-400 p-2 transition">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
               </div>
-              <p class="text-[11px] text-gray-400 mt-1">Como o TikTok bloqueia a leitura direta de áudio de alguns links, colar a fala aqui faz o sistema modelar os roteiros e detectar o produto com precisão cirúrgica!</p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Nome do Produto no Vídeo -->
+                <div>
+                  <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                    <span>Nome do Seu Produto</span>
+                    <span class="text-[10px] text-emerald-400 font-normal">Opcional</span>
+                  </label>
+                  <div class="relative">
+                    <i data-lucide="shopping-bag" class="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input 
+                      type="text" 
+                      id="video-product-input" 
+                      placeholder="Ex: Tênis Plataforma Casual (ou deixe vazio para manter o do vídeo)" 
+                      class="w-full bg-[#101626] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition font-medium"
+                    >
+                  </div>
+                </div>
+
+                <!-- Observações adicionais do vídeo -->
+                <div>
+                  <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                    <span>Observações / Fala Adicional</span>
+                    <span class="text-[10px] text-purple-400 font-normal">Opcional</span>
+                  </label>
+                  <textarea 
+                    id="video-description" 
+                    rows="2"
+                    placeholder="Adicione alguma instrução ou benefício específico que você quer ver no novo roteiro..." 
+                    class="w-full bg-[#101626] border border-gray-800 rounded-xl p-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
+                  ></textarea>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Botão Analisar & Gerar 3 Roteiros -->
+          <!-- Botão Gerar Roteiros -->
           <div class="pt-2">
             <button 
               type="submit" 
@@ -295,7 +410,7 @@
               class="w-full py-4 px-6 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-base rounded-xl shadow-xl shadow-pink-500/25 flex items-center justify-center gap-2.5 transition active:scale-[0.99]"
             >
               <i data-lucide="wand-2" class="w-5 h-5"></i>
-              <span>Analisar Vídeo & Gerar 3 Roteiros</span>
+              <span>Gerar 3 Roteiros de Alta Conversão</span>
             </button>
           </div>
         </form>
@@ -607,9 +722,9 @@
   <script>
     // Estado Global da Criação
     let currentStep = 1;
+    let currentCreationMode = 'photos'; // 'photos' ou 'video'
     let selectedFormat = 'UGC-POV';
     let selectedNarrationMode = 'separate'; // 'separate' ou 'embedded'
-    let competitorUrl = '';
     let productName = '';
     let generatedScripts = [];
     let selectedScript = null;
@@ -618,55 +733,250 @@
     let autoDetectTimeout = null;
     let flowDataCache = null;
 
-    // Detecção Automática do Nome do Produto por Link ou Legenda
-    function handleCompetitorUrlInput(val) {
-      clearTimeout(autoDetectTimeout);
-      const trimmed = val ? val.trim() : '';
-      const caption = document.getElementById('competitor-caption') ? document.getElementById('competitor-caption').value.trim() : '';
-      if (trimmed && (trimmed.includes('tiktok.com') || trimmed.startsWith('http'))) {
-        autoDetectTimeout = setTimeout(() => {
-          triggerAutoProductDetection(trimmed, caption);
-        }, 700);
+    // Armazenamento de Arquivos Locais
+    let uploadedPhotosList = []; // [{ id, dataUrl, mime }]
+    let uploadedVideoData = null; // { file, dataUrl, mime, frames: [] }
+
+    // Alternar Modo de Criação (Fotos vs Vídeo Baixado)
+    function switchCreationMode(mode) {
+      currentCreationMode = mode;
+      const btnPhotos = document.getElementById('btn-mode-photos');
+      const btnVideo = document.getElementById('btn-mode-video');
+      const panelPhotos = document.getElementById('panel-photos');
+      const panelVideo = document.getElementById('panel-video');
+
+      if (mode === 'photos') {
+        btnPhotos.className = "flex items-center justify-center gap-2 p-3.5 rounded-xl border border-pink-500 bg-pink-500/10 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-pink-500/15";
+        btnVideo.className = "flex items-center justify-center gap-2 p-3.5 rounded-xl border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-white font-medium text-xs sm:text-sm transition";
+        panelPhotos.classList.remove('hidden');
+        panelVideo.classList.add('hidden');
+      } else {
+        btnVideo.className = "flex items-center justify-center gap-2 p-3.5 rounded-xl border border-purple-500 bg-purple-500/10 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-purple-500/15";
+        btnPhotos.className = "flex items-center justify-center gap-2 p-3.5 rounded-xl border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-white font-medium text-xs sm:text-sm transition";
+        panelVideo.classList.remove('hidden');
+        panelPhotos.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    // Drag & Drop Handlers Genéricos
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.classList.add('border-pink-500', 'bg-pink-500/5');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.classList.remove('border-pink-500', 'bg-pink-500/5', 'border-purple-500', 'bg-purple-500/5');
+    }
+
+    function handleDropPhotos(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.classList.remove('border-pink-500', 'bg-pink-500/5');
+      if (e.dataTransfer && e.dataTransfer.files) {
+        processImageFiles(Array.from(e.dataTransfer.files));
       }
     }
 
-    function handleCompetitorUrlPaste(e) {
-      setTimeout(() => {
-        const val = document.getElementById('competitor-url').value;
-        const caption = document.getElementById('competitor-caption') ? document.getElementById('competitor-caption').value.trim() : '';
-        if (val) triggerAutoProductDetection(val.trim(), caption);
-      }, 100);
-    }
-
-    function handleCompetitorCaptionInput(val) {
-      clearTimeout(autoDetectTimeout);
-      const trimmed = val ? val.trim() : '';
-      const productInput = document.getElementById('product-input');
-      const compUrl = document.getElementById('competitor-url') ? document.getElementById('competitor-url').value.trim() : '';
-      if (trimmed && (!productInput.value || productInput.value.trim() === '')) {
-        autoDetectTimeout = setTimeout(() => {
-          triggerAutoProductDetection(compUrl, trimmed);
-        }, 600);
+    function handleImageFileSelect(e) {
+      if (e.target && e.target.files) {
+        processImageFiles(Array.from(e.target.files));
       }
     }
 
-    function handleProductInput(val) {
-      const trimmed = val ? val.trim() : '';
-      if (trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
-        clearTimeout(autoDetectTimeout);
-        autoDetectTimeout = setTimeout(() => {
-          triggerAutoProductDetection(trimmed);
-        }, 300);
-      }
+    // Redimensionamento de Imagem no Navegador (Garante envio rápido e leve)
+    async function compressImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxDim = 1024;
+
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            resolve({ dataUrl, mime: 'image/jpeg' });
+          };
+          img.onerror = () => resolve({ dataUrl: event.target.result, mime: file.type || 'image/jpeg' });
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
-    function handleProductPaste(e) {
-      setTimeout(() => {
-        const val = document.getElementById('product-input').value;
-        if (val && (val.startsWith('http://') || val.startsWith('https://'))) {
-          triggerAutoProductDetection(val.trim());
+    async function processImageFiles(files) {
+      const validFiles = files.filter(f => f.type.startsWith('image/'));
+      if (validFiles.length === 0) {
+        showToast("Selecione arquivos de imagem válidos (PNG, JPG, WebP).");
+        return;
+      }
+
+      for (const file of validFiles) {
+        if (uploadedPhotosList.length >= 4) {
+          showToast("Limite de 4 fotos atingido.");
+          break;
         }
-      }, 100);
+        const compressed = await compressImage(file);
+        uploadedPhotosList.push({
+          id: Date.now() + Math.random(),
+          name: file.name,
+          dataUrl: compressed.dataUrl,
+          mime: compressed.mime
+        });
+      }
+      renderPhotosPreview();
+    }
+
+    function removePhoto(id) {
+      uploadedPhotosList = uploadedPhotosList.filter(p => p.id !== id);
+      renderPhotosPreview();
+    }
+
+    function renderPhotosPreview() {
+      const container = document.getElementById('photos-preview-container');
+      if (!container) return;
+
+      if (uploadedPhotosList.length === 0) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+      }
+
+      container.classList.remove('hidden');
+      container.innerHTML = uploadedPhotosList.map(photo => `
+        <div class="relative group rounded-xl overflow-hidden border border-gray-800 bg-gray-900/80 aspect-square">
+          <img src="${photo.dataUrl}" class="w-full h-full object-cover" alt="Foto">
+          <button 
+            type="button" 
+            onclick="removePhoto(${photo.id})"
+            class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/75 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition shadow"
+            title="Remover foto"
+          >
+            ✕
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // Video Handlers
+    function handleDropVideo(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.classList.remove('border-purple-500', 'bg-purple-500/5');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        processVideoFile(e.dataTransfer.files[0]);
+      }
+    }
+
+    function handleVideoFileSelect(e) {
+      if (e.target && e.target.files && e.target.files[0]) {
+        processVideoFile(e.target.files[0]);
+      }
+    }
+
+    async function captureFrameFromVideo(file) {
+      return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        const url = URL.createObjectURL(file);
+        video.src = url;
+
+        video.onloadeddata = () => {
+          video.currentTime = Math.min(1.5, Math.max(0.5, (video.duration || 3) / 3));
+        };
+
+        video.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 480;
+            canvas.height = Math.round((video.videoHeight / (video.videoWidth || 1)) * 480) || 640;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            URL.revokeObjectURL(url);
+            resolve(dataUrl);
+          } catch (e) {
+            URL.revokeObjectURL(url);
+            resolve(null);
+          }
+        };
+
+        video.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        };
+      });
+    }
+
+    async function processVideoFile(file) {
+      const fileNameEl = document.getElementById('video-file-name');
+      const fileSizeEl = document.getElementById('video-file-size');
+      const previewContainer = document.getElementById('video-preview-container');
+      const dropzone = document.getElementById('dropzone-video');
+
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = `${sizeMb} MB - Carregado e pronto para análise`;
+
+      // Captura 1 frame visual do vídeo
+      const frameDataUrl = await captureFrameFromVideo(file);
+      const frames = frameDataUrl ? [{ data: frameDataUrl, mime_type: 'image/jpeg' }] : [];
+
+      // Converte para dataUrl se for até 4MB; para vídeos maiores, manda os frames e metadados
+      let videoBase64 = null;
+      if (file.size <= 4.2 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          uploadedVideoData = {
+            file: file,
+            dataUrl: evt.target.result,
+            mime: file.type || 'video/mp4',
+            frames: frames
+          };
+        };
+        reader.readAsDataURL(file);
+      } else {
+        uploadedVideoData = {
+          file: file,
+          dataUrl: null, // Evita estourar limite de payload da Vercel
+          mime: file.type || 'video/mp4',
+          frames: frames
+        };
+      }
+
+      previewContainer.classList.remove('hidden');
+      dropzone.classList.add('hidden');
+      lucide.createIcons();
+    }
+
+    function removeVideoFile(e) {
+      if (e) e.stopPropagation();
+      uploadedVideoData = null;
+      document.getElementById('input-video').value = '';
+      document.getElementById('video-preview-container').classList.add('hidden');
+      document.getElementById('dropzone-video').classList.remove('hidden');
     }
 
     async function triggerAutoProductDetection(url, contextText = '') {
@@ -791,53 +1101,69 @@
       renderEnvironments();
     }
 
-    // Passo 1: Submissão e Análise
+    // Passo 1: Submissão e Análise (Fotos vs Vídeo Baixado)
     async function handleAnalyzeSubmit(e) {
       e.preventDefault();
-      competitorUrl = document.getElementById('competitor-url').value.trim();
-      productName = document.getElementById('product-input').value.trim();
-      const competitorCaption = document.getElementById('competitor-caption') ? document.getElementById('competitor-caption').value.trim() : '';
 
-      if (!competitorUrl && !productName && !competitorCaption) {
-        showToast("Por favor, insira o link do vídeo, legenda ou nome do produto.");
-        return;
-      }
+      let payload = {
+        mode: currentCreationMode,
+        video_format: selectedFormat
+      };
 
-      // Se o usuário colou o link no campo de produto e deixou o concorrente vazio
-      if (!competitorUrl && productName.startsWith("http")) {
-        competitorUrl = productName;
-      }
+      if (currentCreationMode === 'photos') {
+        const prodVal = document.getElementById('product-input').value.trim();
+        const descVal = document.getElementById('product-description').value.trim();
 
-      if (productName && !productName.startsWith("http")) {
-        updateProductBadges(productName);
-        showLoading(true, `Analisando criativo para: ${productName}...`);
+        if (uploadedPhotosList.length === 0 && !prodVal && !descVal) {
+          showToast("Adicione pelo menos 1 foto ou preencha a descrição do produto.");
+          return;
+        }
+
+        payload.product_input = prodVal;
+        payload.description = descVal;
+        payload.images = uploadedPhotosList.map(p => ({
+          data: p.dataUrl,
+          mime_type: p.mime
+        }));
+
+        const label = prodVal || "o produto";
+        showLoading(true, `Analisando visualmente fotos e gerando roteiros para ${label}...`);
       } else {
-        showLoading(true, "Analisando vídeo e identificando produto...");
+        // Modo Vídeo
+        const videoProd = document.getElementById('video-product-input').value.trim();
+        const videoDesc = document.getElementById('video-description').value.trim();
+
+        if (!uploadedVideoData && !videoProd && !videoDesc) {
+          showToast("Por favor, suba um arquivo de vídeo (.mp4) ou preencha as informações.");
+          return;
+        }
+
+        payload.product_input = videoProd;
+        payload.description = videoDesc;
+        if (uploadedVideoData) {
+          payload.video_data = uploadedVideoData.dataUrl ? {
+            data: uploadedVideoData.dataUrl,
+            mime_type: uploadedVideoData.mime
+          } : null;
+          payload.frames = uploadedVideoData.frames || [];
+        }
+
+        const label = videoProd || "o vídeo";
+        showLoading(true, `Modelando vídeo do concorrente e gerando 3 variações de roteiros...`);
       }
 
       try {
         const res = await fetch('/api/wizard/analyze-and-generate-scripts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            video_format: selectedFormat,
-            competitor_url: competitorUrl,
-            competitor_speech_or_caption: competitorCaption,
-            product_input: productName
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await res.json();
         showLoading(false);
 
-        if (data.error === "TRANSCRIPTION_FAILED") {
-          const captionBox = document.getElementById('competitor-caption');
-          if (captionBox) {
-            captionBox.classList.add('border-amber-500', 'ring-2', 'ring-amber-500/50');
-            captionBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            captionBox.focus();
-          }
-          alert(data.message || "O TikTok bloqueou a extração automática deste vídeo. Por favor, cole a fala ou legenda no campo indicado!");
+        if (data.error === "INPUT_REQUIRED" || data.error === "VIDEO_REQUIRED") {
+          alert(data.message);
           return;
         }
 
@@ -845,7 +1171,8 @@
           generatedScripts = data.scripts;
           if (data.product_name) {
             productName = data.product_name;
-            document.getElementById('product-input').value = productName;
+            if (document.getElementById('product-input')) document.getElementById('product-input').value = productName;
+            if (document.getElementById('video-product-input')) document.getElementById('video-product-input').value = productName;
             updateProductBadges(productName);
           }
           if (data.is_generic_product && data.product_warning) {
@@ -859,7 +1186,7 @@
       } catch (err) {
         showLoading(false);
         console.error(err);
-        showToast("Erro de conexão ao analisar o concorrente.");
+        showToast("Erro de conexão ao processar o criativo.");
       }
     }
 
@@ -1158,6 +1485,20 @@
       currentStep = 1;
       selectedScript = null;
       generatedScripts = [];
+      uploadedPhotosList = [];
+      uploadedVideoData = null;
+      if (document.getElementById('input-photos')) document.getElementById('input-photos').value = '';
+      if (document.getElementById('input-video')) document.getElementById('input-video').value = '';
+      if (document.getElementById('photos-preview-container')) {
+        document.getElementById('photos-preview-container').innerHTML = '';
+        document.getElementById('photos-preview-container').classList.add('hidden');
+      }
+      if (document.getElementById('video-preview-container')) {
+        document.getElementById('video-preview-container').classList.add('hidden');
+      }
+      if (document.getElementById('dropzone-video')) {
+        document.getElementById('dropzone-video').classList.remove('hidden');
+      }
       goToStep(1);
     }
 

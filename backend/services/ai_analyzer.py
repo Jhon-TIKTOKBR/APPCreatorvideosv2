@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -47,6 +47,31 @@ def run_llm_json(system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any
             logger.error(f"Erro na chamada do Gemini API: {e}. Alternando para fallback local.")
 
     # Fallback heurístico inteligente se offline ou sem chave configurada
+    return None
+
+
+def run_llm_multimodal(system_prompt: str, contents: Any) -> Optional[Dict[str, Any]]:
+    """
+    Executa chamada multimodal para o Gemini Flash (imagens, áudio, vídeo + texto)
+    com retorno em JSON estrito.
+    """
+    client = get_genai_client()
+    if client:
+        try:
+            model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    response_mime_type="application/json",
+                    temperature=0.25
+                )
+            )
+            if response.text:
+                return json.loads(response.text)
+        except Exception as e:
+            logger.error(f"Erro na chamada multimodal do Gemini: {e}")
     return None
 
 

@@ -1,10 +1,15 @@
 import re
 import urllib.parse
 import sqlite3
+import base64
 try:
     import httpx
 except ImportError:
     httpx = None
+try:
+    from google.genai import types
+except ImportError:
+    types = None
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -19,15 +24,33 @@ from backend.services.tiktok_collector import (
     is_blacklisted_or_invalid,
     BLACKLIST_PHRASES
 )
-from backend.services.ai_analyzer import run_llm_json
+from backend.services.ai_analyzer import run_llm_json, run_llm_multimodal
 
 router = APIRouter(prefix="/api/wizard", tags=["Video Creation Wizard"])
 
+def safe_b64decode(data_uri: str) -> bytes:
+    """Decodifica string base64 pura ou data URI (ex: data:image/jpeg;base64,...)."""
+    if not data_uri:
+        return b""
+    try:
+        clean = data_uri.strip()
+        if "," in clean:
+            clean = clean.split(",", 1)[1]
+        return base64.b64decode(clean)
+    except Exception:
+        return b""
+
 class StartWizardRequest(BaseModel):
+    mode: Optional[str] = "photos" # "photos", "video" ou "link"
     video_format: str = "UGC-POV" # UGC, POV, UGC-POV
-    competitor_url: str
-    competitor_speech_or_caption: Optional[str] = None # Fala ou Legenda do vídeo copiada pelo usuário
-    product_input: Optional[str] = None # Link ou Nome do Produto
+    product_input: Optional[str] = None # Nome do Produto
+    description: Optional[str] = None # Detalhes do produto, tecido, bolsos, zíper, oferta
+    images: Optional[List[Dict[str, Any]]] = None # [{"data": "base64...", "mime_type": "image/jpeg"}]
+    video_data: Optional[Dict[str, Any]] = None # {"data": "base64...", "mime_type": "video/mp4" ou "audio/wav"}
+    frames: Optional[List[Dict[str, Any]]] = None # [{"data": "base64...", "mime_type": "image/jpeg"}]
+    # Retrocompatibilidade com links antigos
+    competitor_url: Optional[str] = None
+    competitor_speech_or_caption: Optional[str] = None
 
 
 class ExtractProductInfoRequest(BaseModel):
@@ -238,9 +261,23 @@ def list_environments():
     }
 
 
-def build_category_scripts(product_name: str, video_format: str, raw_context: str = "") -> List[Dict[str, Any]]:
+def build_category_scripts(product_name: str, video_format: str, raw_context: str = "", visual_details: str = "") -> List[Dict[str, Any]]:
     prod = product_name.strip()
-    low = (prod + " " + (raw_context or "")).lower()
+    low = (prod + " " + (raw_context or "") + " " + (visual_details or "")).lower()
+
+    # Detectar características visuais e de produto para enriquecer dinamicamente os movimentos
+    has_pocket = any(k in low for k in ["bolso", "bolsos", "pockets"])
+    has_zipper = any(k in low for k in ["zíper", "ziper", "fecho"])
+    has_stretch = any(k in low for k in ["elasticidade", "elastano", "estica", "canelado", "lycra"])
+    has_lining = any(k in low for k in ["duplo", "não marca", "nao marca", "forro", "transparência", "transparencia"])
+
+    extra_movement = ""
+    if has_stretch:
+        extra_movement += "puxa suavemente o tecido com ambas as mãos demonstrando elasticidade e retorno sem deformar; "
+    if has_pocket:
+        extra_movement += "aproxima a mão em close-up deslizando e puxando o bolso mostrando costura reforçada; "
+    if has_zipper:
+        extra_movement += "destaca o fechamento com zíper de boutique em ângulo próximo; "
 
     # 1. Calçados (tênis, sandália, bota, salto, etc.)
     if any(k in low for k in ["tênis", "tenis", "sandália", "sandalia", "bota", "salto", "scarpin", "mocassim", "chinelo", "papete", "rasteira", "mule", "calçado", "calcado"]):
@@ -338,16 +375,20 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
             }
         ]
 
-    # 4. Moda Feminina (Padrão e Roupas)
+    # 4. Moda Feminina (Padrão e Roupas) com injeção de detalhes (bolso, zíper, elasticidade)
+    mov_1 = f"Movimentação contínua em alta velocidade: {extra_movement}a modelo estica o tecido mostrando elasticidade; passa as mãos firmemente na cintura mostrando caimento liso sem marcas; dá passos à frente em direção ao espelho; vira de perfil para a esquerda, gira e vira para a direita; joga o cabelo ruivo para trás do ombro; cortes rápidos a cada 1.2s trocando de cor; e finaliza aos 9s-10s estendendo o dedo indicador apontando firme para baixo no carrinho do TikTok Shop."
+    mov_2 = f"Movimentação contínua em alta velocidade: aproximação surpresa no espelho dando passos à frente; {extra_movement}puxão firme com as duas mãos esticando o tecido para provar elasticidade e zero transparência; passa as mãos na lateral da cintura mostrando caimento reto; vira de perfil; joga o cabelo ruivo para trás; finaliza aos 9s-10s apontando o dedo indicador para baixo no carrinho."
+    mov_3 = f"Movimentação contínua em alta velocidade: giro confiante de 360 graus de corpo inteiro; {extra_movement}passa as mãos deslizando pelo tecido ajustando a peça; caminha 2 passos à frente; joga o cabelo ruivo para trás; vira de perfil de ambos os lados e finaliza estendendo o dedo indicador apontando direto para o botão do carrinho."
+
     return [
         {
             "id": 1,
             "angle_title": "Desejo & Contagem de Cores",
             "target_emotion": "Desejo incontrolável de ter todas as cores",
-            "scene_1_text": f"Comprei uma, duas, três, quatro cores do mesmo modelo de tanto que me apaixonei! Eu estava cansada de roupa que fica transparente e marca a barriga. Esse {prod} tem o caimento perfeito que modela o corpo,",
+            "scene_1_text": f"Comprei uma, duas, três, quatro cores desse {prod} de tanto que me apaixonei! Eu estava cansada de roupa que fica transparente e marca a barriga. Esse modelo tem o caimento perfeito que modela o corpo,",
             "scene_2_text": "esconde as imperfeições e deixa qualquer look chique em segundos, sem falar que é super versátil. Veste super bem do M ao GG! Se o carrinho laranja estiver aparecendo aqui embaixo, já corre e garante o seu antes que acabe!",
-            "full_audio": f"Comprei uma, duas, três, quatro cores do mesmo modelo de tanto que me apaixonei! Eu estava cansada de roupa que fica transparente e marca a barriga. Esse {prod} tem o caimento perfeito que modela o corpo, esconde as imperfeições e deixa qualquer look chique em segundos, sem falar que é super versátil. Veste super bem do M ao GG! Se o carrinho laranja estiver aparecendo aqui embaixo, já corre e garante o seu antes que acabe!",
-            "movements_summary": "Movimentação contínua em alta velocidade: a modelo estica o tecido com as duas mãos mostrando elasticidade; passa as mãos firmemente na cintura e quadris mostrando caimento liso sem marcas; dá passos à frente em direção ao espelho; vira de perfil para a esquerda, gira e vira para a direita; joga o cabelo ruivo para trás do ombro; cortes rápidos a cada 1.2s trocando de cor; e finaliza aos 9s-10s estendendo o dedo indicador apontando firme para baixo no carrinho do TikTok Shop."
+            "full_audio": f"Comprei uma, duas, três, quatro cores desse {prod} de tanto que me apaixonei! Eu estava cansada de roupa que fica transparente e marca a barriga. Esse modelo tem o caimento perfeito que modela o corpo, esconde as imperfeições e deixa qualquer look chique em segundos, sem falar que é super versátil. Veste super bem do M ao GG! Se o carrinho laranja estiver aparecendo aqui embaixo, já corre e garante o seu antes que acabe!",
+            "movements_summary": mov_1
         },
         {
             "id": 2,
@@ -356,7 +397,7 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
             "scene_1_text": f"Eu tinha certeza que por esse preço esse {prod} ia marcar toda a barriga ou ficar transparente. Mas quando chegou no correio e provei... olha o caimento dessa modelagem!",
             "scene_2_text": "O tecido é duplo, não tem transparência nenhuma e disfarça qualquer imperfeição na hora. Veste do 38 ao 46 perfeitamente! Clica no carrinho aqui embaixo antes que as cores mais pedidas esgotem!",
             "full_audio": f"Eu tinha certeza que por esse preço esse {prod} ia marcar toda a barriga ou ficar transparente. Mas quando chegou no correio e provei... olha o caimento dessa modelagem! O tecido é duplo, não tem transparência nenhuma e disfarça qualquer imperfeição na hora. Veste do 38 ao 46 perfeitamente! Clica no carrinho aqui embaixo antes que as cores mais pedidas esgotem!",
-            "movements_summary": "Movimentação contínua em alta velocidade: aproximação surpresa no espelho dando passos à frente; puxão firme com as duas mãos esticando o tecido para provar elasticidade e zero transparência; passa as mãos na lateral da cintura mostrando barriga reta; vira de perfil para um lado, gira e vira para o outro lado; joga o cabelo ruivo para trás; finaliza aos 9s-10s apontando o dedo indicador para baixo no carrinho."
+            "movements_summary": mov_2
         },
         {
             "id": 3,
@@ -365,7 +406,7 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
             "scene_1_text": f"A única peça do meu guarda-roupa que eu consigo usar no trabalho de manhã com blazer e ir direto pro restaurante à noite sem amassar nada! Esse {prod} é um absurdo de chique.",
             "scene_2_text": "Parece aquelas peças de shopping que custam 300 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
             "full_audio": f"A única peça do meu guarda-roupa que eu consigo usar no trabalho de manhã com blazer e ir direto pro restaurante à noite sem amassar nada! Esse {prod} é um absurdo de chique. Parece aquelas peças de shopping que custam 300 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
-            "movements_summary": "Movimentação contínua em alta velocidade: giro confiante de 360 graus de corpo inteiro; passa as mãos deslizando pelo tecido ajustando a peça; estica a barra com os dedos para mostrar caimento impecável; caminha 2 passos à frente; joga o cabelo ruivo para trás; vira de perfil de ambos os lados e finaliza estendendo o dedo indicador apontando direto para o botão do carrinho."
+            "movements_summary": mov_3
         }
     ]
 
@@ -373,104 +414,242 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
 @router.post("/analyze-and-generate-scripts")
 async def analyze_and_generate_scripts(req: StartWizardRequest):
     """
-    Passo 1 & 2: Analisa o link do concorrente e gera 3 variações de roteiros
-    com base no estilo de movimentação e ritmo de alta conversão.
-    Sem fallback silencioso: se a transcrição/legenda falhar, exige entrada manual.
+    Passo 1 & 2: Analisa a entrada escolhida pelo criador e gera 3 variações de roteiros:
+    - Modo 'photos': Analisa 1 a 4 fotos/prints do produto + descrição via Gemini Vision.
+    - Modo 'video': Analisa o arquivo de vídeo (.mp4) ou áudio do concorrente + frames.
+    - Modo 'link' (legado): Fallback para link caso o usuário use retrocompatibilidade.
     """
+    mode = req.mode or "photos"
+
+    # =========================================================================
+    # ESTRATÉGIA 1: FOTOS / PRINTS + TEXTO / DESCRIÇÃO (100% à prova de bloqueios)
+    # =========================================================================
+    if mode == "photos":
+        images_list = req.images or []
+        desc = (req.description or "").strip()
+        prod_input = (req.product_input or "").strip()
+
+        if not images_list and not desc and not prod_input:
+            return {
+                "success": False,
+                "error": "INPUT_REQUIRED",
+                "message": "Por favor, adicione pelo menos uma foto/print do produto ou preencha o nome e a descrição do produto."
+            }
+
+        product_name = prod_input if (prod_input and not prod_input.startswith("http")) else ""
+        is_generic_product = False
+        product_warning = None
+        visual_details = ""
+        scripts = None
+
+        # Se temos imagens e o Gemini está disponível:
+        if types and images_list:
+            system_prompt = """Você é um diretor sênior de roteiros para TikTok Shop especializado em vídeos de alta conversão (formato Provador UGC-POV).
+Sua missão:
+1. Inspecione visualmente as fotos/prints do produto enviadas: analise tecido (canelado, linho, algodão, etc.), modelagem (caimento, fendas, corte), detalhes especiais (bolsos, zíperes, costuras reforçadas, botões, decote, caimento na cintura/quadril) e cores disponíveis.
+2. Identifique ou confirme o nome comercial do produto com precisão.
+3. Crie 3 variações de roteiros persuasivos adaptados para esse produto no TikTok Shop.
+Cada roteiro deve conter:
+- Cena 1 (0-10s): Gancho ultra dinâmico citando o produto e destacando os detalhes visuais reais vistos nas fotos.
+- Cena 2 (10-20s): Quebra de objeção (não marca, tecido encorpado, não é transparente) e chamada para ação com a modelo estendendo o dedo indicador apontando firme para o carrinho aos 9-10s.
+- movements_summary: Instruções detalhadas de movimentos rápidos da modelo no espelho (cobrindo o rosto com o celular), puxando suavemente o bolso, a costura e o tecido para provar elasticidade e acabamento.
+Responda SEMPRE em JSON rigoroso:
+{
+  "product_name": "Nome Comercial do Produto",
+  "visual_details": "Resumo dos detalhes reais vistos nas fotos (bolso, zíper, tecido, cores)",
+  "scripts": [
+    {
+      "id": 1,
+      "angle_title": "Desejo & Contagem de Cores",
+      "target_emotion": "Desejo incontrolável de ter todas as cores",
+      "scene_1_text": "texto da cena 1 citando o produto",
+      "scene_2_text": "texto da cena 2 com CTA para o carrinho",
+      "full_audio": "texto completo do áudio",
+      "movements_summary": "direção de movimentos rápidos da modelo"
+    }
+  ]
+}"""
+            multimodal_contents = []
+            for img in images_list[:4]:
+                raw = safe_b64decode(img.get("data", ""))
+                if raw:
+                    mime = img.get("mime_type", "image/jpeg")
+                    multimodal_contents.append(types.Part.from_bytes(data=raw, mime_type=mime))
+
+            user_text = f"""Produto informado pelo criador: {product_name or 'Identifique detalhadamente pelas fotos'}
+Descrição e especificações fornecidas: {desc or 'Observe as fotos anexadas'}
+Formato do vídeo: {req.video_format}
+
+Analise os detalhes visuais das fotos e gere os 3 roteiros completos com ritmo acelerado."""
+            multimodal_contents.append(user_text)
+
+            gemini_res = run_llm_multimodal(system_prompt, multimodal_contents)
+            if gemini_res and "scripts" in gemini_res and len(gemini_res["scripts"]) >= 3:
+                scripts = gemini_res["scripts"]
+                if not product_name and gemini_res.get("product_name"):
+                    product_name = str(gemini_res["product_name"]).strip()
+                visual_details = gemini_res.get("visual_details", "")
+
+        # Fallback inteligente se Gemini offline ou sem imagens
+        if not scripts:
+            if not product_name:
+                product_name = extract_product_with_gemini(desc) or extract_product_with_regex(desc) or "Produto a Definir"
+                if product_name == "Produto a Definir":
+                    is_generic_product = True
+                    product_warning = "Aviso: Nome do produto definido como 'Produto a Definir'. Recomendamos digitar o nome exato no campo de produto."
+            scripts = build_category_scripts(product_name, req.video_format, raw_context=desc, visual_details=desc)
+
+        return {
+            "success": True,
+            "mode": "photos",
+            "product_name": product_name,
+            "is_generic_product": is_generic_product,
+            "product_warning": product_warning,
+            "visual_details": visual_details,
+            "video_format": req.video_format,
+            "scripts": scripts
+        }
+
+    # =========================================================================
+    # ESTRATÉGIA 2: SUBIR VÍDEO (.MP4) / ÁUDIO DO CONCORRENTE
+    # =========================================================================
+    elif mode == "video":
+        video_info = req.video_data
+        frames_list = req.frames or []
+        desc = (req.description or "").strip()
+        prod_input = (req.product_input or "").strip()
+        user_caption = (req.competitor_speech_or_caption or "").strip()
+
+        if not video_info and not frames_list and not user_caption and not desc:
+            return {
+                "success": False,
+                "error": "VIDEO_REQUIRED",
+                "message": "Por favor, selecione e suba um arquivo de vídeo (.mp4, .mov) ou áudio do concorrente."
+            }
+
+        product_name = prod_input if (prod_input and not prod_input.startswith("http")) else ""
+        is_generic_product = False
+        product_warning = None
+        scripts = None
+
+        if types and (video_info or frames_list):
+            system_prompt = """Você é um diretor sênior de criação de vídeos de alta conversão para TikTok Shop.
+Sua missão:
+1. Analise o vídeo/áudio do concorrente e as cenas anexadas.
+2. Transcreva a fala e extraia os ganchos mentais, ritmo, quebra de objeções e CTA usados no vídeo.
+3. Identifique o produto demonstrado.
+4. Modele esse ritmo e gere 3 novas variações de roteiros otimizadas para o produto do vendedor.
+Cada roteiro deve conter:
+- Cena 1 (0-10s): Gancho forte de alta retenção.
+- Cena 2 (10-20s): Quebra de objeção e CTA com a modelo apontando para o carrinho aos 9-10s.
+- movements_summary: Instruções de movimentos rápidos no espelho (estilo UGC-POV).
+Responda SEMPRE em JSON rigoroso:
+{
+  "product_name": "Nome Comercial do Produto",
+  "competitor_transcript": "Transcrição do que é falado no vídeo",
+  "scripts": [
+    {
+      "id": 1,
+      "angle_title": "Desejo & Contagem de Cores",
+      "target_emotion": "Desejo incontrolável de ter todas as cores",
+      "scene_1_text": "texto cena 1",
+      "scene_2_text": "texto cena 2 com CTA para o carrinho",
+      "full_audio": "áudio completo",
+      "movements_summary": "direção de movimentos rápidos"
+    }
+  ]
+}"""
+            multimodal_contents = []
+            if video_info:
+                v_raw = safe_b64decode(video_info.get("data", ""))
+                v_mime = video_info.get("mime_type", "video/mp4")
+                if v_raw:
+                    multimodal_contents.append(types.Part.from_bytes(data=v_raw, mime_type=v_mime))
+
+            for frame in frames_list[:3]:
+                f_raw = safe_b64decode(frame.get("data", ""))
+                if f_raw:
+                    multimodal_contents.append(types.Part.from_bytes(data=f_raw, mime_type=frame.get("mime_type", "image/jpeg")))
+
+            user_text = f"""Produto do vendedor: {product_name or 'Identifique pelo vídeo'}
+Observações e detalhes adicionais: {desc or user_caption or 'Nenhuma'}
+Formato do vídeo: {req.video_format}
+
+Analise o concorrente e gere 3 roteiros modelados com perfeição."""
+            multimodal_contents.append(user_text)
+
+            gemini_res = run_llm_multimodal(system_prompt, multimodal_contents)
+            if gemini_res and "scripts" in gemini_res and len(gemini_res["scripts"]) >= 3:
+                scripts = gemini_res["scripts"]
+                if not product_name and gemini_res.get("product_name"):
+                    product_name = str(gemini_res["product_name"]).strip()
+
+        if not scripts:
+            if not product_name:
+                product_name = extract_product_with_gemini(user_caption or desc) or extract_product_with_regex(user_caption or desc) or "Produto a Definir"
+                if product_name == "Produto a Definir":
+                    is_generic_product = True
+                    product_warning = "Aviso: Nome do produto definido provisoriamente como 'Produto a Definir'."
+            scripts = build_category_scripts(product_name, req.video_format, raw_context=user_caption or desc, visual_details=desc)
+
+        return {
+            "success": True,
+            "mode": "video",
+            "product_name": product_name,
+            "is_generic_product": is_generic_product,
+            "product_warning": product_warning,
+            "video_format": req.video_format,
+            "scripts": scripts
+        }
+
+    # =========================================================================
+    # ESTRATÉGIA LEGADA: LINK DO TIKTOK
+    # =========================================================================
     comp_url = req.competitor_url.strip() if req.competitor_url else ""
     user_speech_caption = (req.competitor_speech_or_caption or "").strip()
 
-    # 1. Tentar obter metadados (legenda/título) do TikTok via oEmbed, yt-dlp ou meta tags
     metadata_caption = ""
-    metadata_author = None
     if comp_url:
         meta_res = await extract_tiktok_metadata_fast(comp_url)
         if meta_res.get("success") and meta_res.get("text"):
             metadata_caption = meta_res["text"]
-            metadata_author = meta_res.get("author_name")
 
     caption = user_speech_caption or metadata_caption or ""
-
-    # 2. REMOÇÃO DO FALLBACK SILENCIOSO:
-    # Se a extração automática falhou e o usuário não colou a fala/roteiro do concorrente:
     if not caption:
         return {
             "success": False,
             "error": "TRANSCRIPTION_FAILED",
-            "message": "O TikTok bloqueou a extração automática de áudio e legenda deste vídeo (proteção anti-bot do TikTok). Por favor, cole o que a pessoa fala no vídeo ou a legenda no campo 'Fala / Roteiro Transcrito do Concorrente' abaixo para prosseguirmos!"
+            "message": "O TikTok bloqueou a extração automática de áudio e legenda deste link. Recomendamos usar a aba '📸 Fotos / Prints + Texto' ou '📤 Subir Vídeo (.mp4)' para gerar instantaneamente sem bloqueios!"
         }
 
-    # 3. DETECÇÃO DO NOME DO PRODUTO (GEMINI -> REGEX -> AVISO GENÉRICO):
     product_name = ""
     is_generic_product = False
     product_warning = None
 
-    # 3.1. Se o usuário digitou no campo de produto explicitamente e não é uma URL:
     if req.product_input and req.product_input.strip() and not req.product_input.strip().startswith("http"):
         product_name = req.product_input.strip()
 
-    # 3.2. Usar Gemini a partir do roteiro, da legenda e do título:
     if not product_name or is_blacklisted_or_invalid(product_name):
-        combined_context = f"Legenda/Título do Vídeo: {metadata_caption}\nFala/Roteiro do Vídeo: {user_speech_caption or caption}\nLink do Vídeo: {comp_url}"
+        combined_context = f"Legenda/Título do Vídeo: {metadata_caption}\nFala/Roteiro: {user_speech_caption or caption}"
         gemini_prod = extract_product_with_gemini(combined_context)
         if gemini_prod and not is_blacklisted_or_invalid(gemini_prod):
             product_name = gemini_prod
 
-    # 3.3. Se o Gemini falhou ou não está configurado, usar heurística regex de categorias:
     if not product_name or is_blacklisted_or_invalid(product_name):
         regex_prod = extract_product_with_regex(caption)
         if regex_prod and not is_blacklisted_or_invalid(regex_prod):
             product_name = regex_prod
 
-    # 3.4. Se TUDO falhar: usar nome genérico e avisar expressamente:
     if not product_name or is_blacklisted_or_invalid(product_name):
         product_name = "Produto a Definir"
         is_generic_product = True
-        product_warning = "Aviso: Não foi possível detectar o nome exato do produto automaticamente a partir do link ou fala. Nome definido provisoriamente como 'Produto a Definir' - recomendamos que você ajuste no campo de produto."
+        product_warning = "Aviso: Nome definido provisoriamente como 'Produto a Definir'."
 
-    # 4. GERAÇÃO DOS 3 ROTEIROS COM GEMINI OU ENGINE DINÂMICA
-    system_prompt = f"""Você é um diretor sênior de roteiros para TikTok Shop no nicho de Moda Feminina e E-commerce.
-Você cria roteiros com ritmo acelerado de cortes (jump cuts a cada 1.2s a 1.5s), estilo Provador POV (UGC-POV com celular cobrindo o rosto),
-com ganchos fortes nos primeiros 3 segundos, contagem de cores, quebra de objeções e CTA claro apontando para o carrinho do TikTok Shop.
-Você DEVE citar explicitamente o produto '{product_name}' em todos os roteiros e modelar a linguagem e argumentos reais da fala do concorrente.
-A modelo deve ter MOVIMENTAÇÃO CONTÍNUA E RÁPIDA adaptada ao produto, e finalizar aos 9-10s apontando o dedo para o carrinho.
-Responda SEMPRE em JSON rigoroso com exatamente 3 roteiros distintos."""
-
-    user_prompt = f"""Modele este criativo de concorrente:
-URL: {comp_url}
-Fala / Roteiro / Legenda do Concorrente: {caption}
-Produto Alvo: {product_name}
-Formato Escolhido: {req.video_format}
-
-Gere 3 variações de roteiros persuasivos adaptados para '{product_name}' (divididos em Cena 1: 0-10s e Cena 2: 10-20s):
-1. Roteiro 1: Foco em Desejo & Variedade ("Comprei 1, 2, 3...")
-2. Roteiro 2: Foco em Quebra de Ceticismo & Qualidade Real ("Achei que pelo preço não ia prestar...")
-3. Roteiro 3: Foco em Versatilidade & Custo-Benefício ("Parece peça cara de shopping...")
-
-Formato JSON esperado:
-{{
-  "scripts": [
-    {{
-      "id": 1,
-      "angle_title": "Desejo & Variedade",
-      "target_emotion": "Desejo incontrolável",
-      "scene_1_text": "texto cena 1 citando {product_name}",
-      "scene_2_text": "texto cena 2 com CTA para o carrinho",
-      "full_audio": "audio completo",
-      "movements_summary": "direcao de movimentos rapidos da modelo"
-    }}
-  ]
-}}"""
-
-    llm_res = run_llm_json(system_prompt, user_prompt)
-    if llm_res and "scripts" in llm_res and len(llm_res["scripts"]) >= 3:
-        scripts = llm_res["scripts"]
-    else:
-        # Engine dinâmica adaptada à categoria detectada
-        scripts = build_category_scripts(product_name, req.video_format, raw_context=caption)
+    scripts = build_category_scripts(product_name, req.video_format, raw_context=caption)
 
     return {
         "success": True,
+        "mode": "link",
         "product_name": product_name,
         "is_generic_product": is_generic_product,
         "product_warning": product_warning,
