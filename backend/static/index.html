@@ -69,72 +69,72 @@
 <body class="bg-[#070a12] text-gray-100 min-h-screen flex flex-col antialiased selection:bg-pink-500 selection:text-white">
 
   <!-- Header Simplificado e Elegante -->
-  <header class="border-b border-gray-800/80 bg-[#0b0f19]/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
-    <div class="max-w-6xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-3.5">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-pink-500/25">
-          <i data-lucide="video" class="w-5 h-5 text-white"></i>
+  <header class="border-b border-gray-800/80 bg-[#0b0f19]/90 backdrop-blur sticky top-0 z-50 px-4 sm:px-6 py-3.5 sm:py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-pink-500/25 flex-shrink-0">
+          <i data-lucide="video" class="w-4 h-4 sm:w-5 sm:h-5 text-white"></i>
         </div>
-        <div>
-          <h1 class="font-extrabold text-xl leading-none tracking-tight flex items-center gap-2">
+        <div class="truncate">
+          <h1 class="font-extrabold text-base sm:text-xl leading-none tracking-tight flex items-center gap-1.5 sm:gap-2">
             TikTok Shop <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">AI Studio</span>
           </h1>
-          <p class="text-xs text-gray-400 mt-1 font-medium">Estúdio de Criação de Vídeos de Alta Conversão</p>
+          <p class="text-[10px] sm:text-xs text-gray-400 mt-1 font-medium truncate">Estúdio de Criação de Vídeos de Alta Conversão</p>
         </div>
       </div>
 
-      <!-- Referências Ativas Badge -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-semibold">
+      <!-- Referências Ativas Badge & Botão Novo -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-semibold">
           <span class="w-2 h-2 rounded-full bg-pink-500 animate-pulse"></span>
           Modelo Ruiva & Provador Ativos
         </div>
-        <button onclick="resetWizard()" class="text-xs text-gray-400 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
-          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Novo Vídeo
+        <button onclick="resetWizard()" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span class="hidden xs:inline">Novo</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
+  <main class="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8">
 
-    <!-- Stepper de Progresso -->
-    <div class="mb-10">
+    <!-- Stepper de Progresso Responsivo -->
+    <div class="mb-6 sm:mb-10 px-1 sm:px-0">
       <div class="flex items-center justify-between relative max-w-3xl mx-auto">
-        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-800 -z-0"></div>
-        <div id="step-line-progress" class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-pink-500 to-rose-500 -z-0 transition-all duration-500" style="width: 0%"></div>
+        <div class="absolute left-0 top-4 sm:top-5 -translate-y-1/2 w-full h-1 bg-gray-800 -z-0"></div>
+        <div id="step-line-progress" class="absolute left-0 top-4 sm:top-5 -translate-y-1/2 h-1 bg-gradient-to-r from-pink-500 to-rose-500 -z-0 transition-all duration-500" style="width: 0%"></div>
 
         <!-- Passo 1 -->
-        <div onclick="navigateStep(1)" class="relative z-10 flex flex-col items-center cursor-pointer group">
-          <div id="badge-step-1" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-active transition-all group-hover:scale-110">
+        <div onclick="navigateStep(1)" class="relative z-10 flex flex-col items-center cursor-pointer group flex-1">
+          <div id="badge-step-1" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm step-active transition-all group-hover:scale-110">
             1
           </div>
-          <span class="text-xs font-semibold mt-2 text-white">Vídeo & Produto</span>
+          <span class="text-[10px] sm:text-xs font-semibold mt-1 sm:mt-2 text-white text-center leading-tight">Vídeo & Produto</span>
         </div>
 
         <!-- Passo 2 -->
-        <div onclick="navigateStep(2)" class="relative z-10 flex flex-col items-center cursor-pointer group">
-          <div id="badge-step-2" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-pending transition-all group-hover:scale-110">
+        <div onclick="navigateStep(2)" class="relative z-10 flex flex-col items-center cursor-pointer group flex-1">
+          <div id="badge-step-2" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm step-pending transition-all group-hover:scale-110">
             2
           </div>
-          <span class="text-xs font-semibold mt-2 text-gray-400">3 Roteiros</span>
+          <span class="text-[10px] sm:text-xs font-semibold mt-1 sm:mt-2 text-gray-400 text-center leading-tight">3 Roteiros</span>
         </div>
 
         <!-- Passo 3 -->
-        <div onclick="navigateStep(3)" class="relative z-10 flex flex-col items-center cursor-pointer group">
-          <div id="badge-step-3" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-pending transition-all group-hover:scale-110">
+        <div onclick="navigateStep(3)" class="relative z-10 flex flex-col items-center cursor-pointer group flex-1">
+          <div id="badge-step-3" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm step-pending transition-all group-hover:scale-110">
             3
           </div>
-          <span class="text-xs font-semibold mt-2 text-gray-400">Ambiente</span>
+          <span class="text-[10px] sm:text-xs font-semibold mt-1 sm:mt-2 text-gray-400 text-center leading-tight">Ambiente</span>
         </div>
 
         <!-- Passo 4 -->
-        <div onclick="navigateStep(4)" class="relative z-10 flex flex-col items-center cursor-pointer group">
-          <div id="badge-step-4" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm step-pending transition-all group-hover:scale-110">
+        <div onclick="navigateStep(4)" class="relative z-10 flex flex-col items-center cursor-pointer group flex-1">
+          <div id="badge-step-4" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm step-pending transition-all group-hover:scale-110">
             4
           </div>
-          <span class="text-xs font-semibold mt-2 text-gray-400">Prompts & Áudio</span>
+          <span class="text-[10px] sm:text-xs font-semibold mt-1 sm:mt-2 text-gray-400 text-center leading-tight">Prompts & Áudio</span>
         </div>
       </div>
     </div>
@@ -225,12 +225,12 @@
           </div>
 
           <!-- Links de Entrada -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             <!-- Link do Concorrente -->
             <div>
-              <label class="block text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+              <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
                 <span>Link do Vídeo do Concorrente (TikTok)</span>
-                <span class="text-[10px] text-pink-400 font-normal">Identifica o produto automaticamente</span>
+                <span class="text-[10px] text-pink-400 font-normal">Identifica o produto</span>
               </label>
               <div class="relative">
                 <i data-lucide="link" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
@@ -241,17 +241,17 @@
                   oninput="handleCompetitorUrlInput(this.value)"
                   onpaste="handleCompetitorUrlPaste(event)"
                   placeholder="https://www.tiktok.com/@concorrente/video/..." 
-                  class="w-full bg-[#101626] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition"
+                  class="w-full bg-[#101626] border border-gray-800 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition"
                 >
               </div>
-              <p class="text-[11px] text-gray-400 mt-1.5">Ao colar o link, o sistema extrai o ritmo, cortes e o nome do produto automaticamente.</p>
+              <p class="text-[11px] text-gray-400 mt-1">Ao colar o link, o sistema extrai o ritmo e o produto do vídeo.</p>
             </div>
 
             <!-- Produto Alvo -->
             <div>
-              <label class="block text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+              <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
                 <span>Nome ou Link do Seu Produto</span>
-                <span class="text-[10px] text-emerald-400 font-normal">Detecta automaticamente</span>
+                <span class="text-[10px] text-emerald-400 font-normal">Automático ou manual</span>
               </label>
               <div class="relative">
                 <i data-lucide="shopping-bag" class="w-4 h-4 text-pink-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
@@ -260,14 +260,35 @@
                   id="product-input" 
                   oninput="handleProductInput(this.value)"
                   onpaste="handleProductPaste(event)"
-                  placeholder="Cole o link do produto ou digite o nome (opcional se colar o vídeo)" 
+                  placeholder="Ex: Vestido Canelado, Tênis Branco, Bolsa Couro..." 
                   value=""
-                  class="w-full bg-[#101626] border border-pink-500/40 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-medium"
+                  class="w-full bg-[#101626] border border-pink-500/40 rounded-xl pl-10 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-medium"
                 >
               </div>
               <!-- Status de Detecção Automática -->
               <div id="product-detection-status" class="hidden text-xs text-pink-400 font-medium flex items-center gap-1.5 mt-1.5"></div>
-              <p class="text-[11px] text-gray-400 mt-1.5">Cole o link da TikTok Shop, Shopee ou digite o nome. Se deixar vazio, identificamos pelo vídeo.</p>
+              <p class="text-[11px] text-gray-400 mt-1">Digite o nome ou cole o link do produto. Se deixar vazio, identificamos pelo vídeo ou legenda.</p>
+            </div>
+
+            <!-- Legenda ou Fala do Vídeo do Concorrente (Novo campo inteligente) -->
+            <div class="md:col-span-2">
+              <label class="block text-xs sm:text-sm font-semibold text-gray-200 mb-1.5 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <i data-lucide="message-square-quote" class="w-4 h-4 text-pink-400"></i>
+                  Fala / Legenda do Vídeo do Concorrente (Opcional & Recomendado)
+                </span>
+                <span class="text-[10px] text-pink-400 font-normal">Garante 100% de precisão</span>
+              </label>
+              <div class="relative">
+                <textarea 
+                  id="competitor-caption" 
+                  rows="2"
+                  oninput="handleCompetitorCaptionInput(this.value)"
+                  placeholder="Cole aqui o que a pessoa fala no vídeo ou a legenda dele (ex: 'Meninas, comprei essa bolsa transversal de couro e olha a perfeição das costuras...')" 
+                  class="w-full bg-[#101626] border border-gray-800 rounded-xl p-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition resize-none"
+                ></textarea>
+              </div>
+              <p class="text-[11px] text-gray-400 mt-1">Como o TikTok bloqueia a leitura direta de áudio de alguns links, colar a fala aqui faz o sistema modelar os roteiros e detectar o produto com precisão cirúrgica!</p>
             </div>
           </div>
 
@@ -291,23 +312,23 @@
     <!-- PASSO 2: 3 VERSÕES DE ROTEIROS BASEADOS NO CONCORRENTE -->
     <!-- ========================================== -->
     <section id="step-2" class="hidden space-y-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-            <i data-lucide="file-text" class="w-6 h-6 text-pink-500"></i>
+            <i data-lucide="file-text" class="w-5 h-5 sm:w-6 sm:h-6 text-pink-500"></i>
             Escolha 1 dos 3 Roteiros Gerados
           </h2>
-          <p class="text-sm text-gray-400 mt-0.5">
+          <p class="text-xs sm:text-sm text-gray-400 mt-0.5">
             Baseados no ritmo e movimentação de alta conversão. Cada versão explora um gatilho de venda diferente.
           </p>
         </div>
-        <button onclick="goToStep(1)" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+        <button onclick="goToStep(1)" class="self-start sm:self-auto text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
           <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Vídeo & Produto
         </button>
       </div>
 
       <!-- Banner com Nome do Produto em Destaque -->
-      <div class="glass-card rounded-xl p-3.5 px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
+      <div class="glass-card rounded-xl p-3.5 px-4 sm:px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
         <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
         <div class="text-xs">
           <span class="text-gray-400 font-medium">Produto em Produção:</span>
@@ -316,13 +337,13 @@
       </div>
 
       <!-- Container das 3 Versões de Roteiros -->
-      <div id="scripts-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div id="scripts-container" class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <!-- Renderizado dinamicamente via JS -->
       </div>
 
       <!-- Botão Voltar Inferior no Passo 2 -->
       <div class="pt-4 flex items-center justify-start border-t border-gray-800/80">
-        <button onclick="goToStep(1)" class="py-2.5 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
+        <button onclick="goToStep(1)" class="w-full sm:w-auto justify-center py-2.5 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
           <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar para Passo 1 (Vídeo & Produto)
         </button>
       </div>
@@ -333,23 +354,23 @@
     <!-- PASSO 3: SELECIONAR O AMBIENTE -->
     <!-- ========================================== -->
     <section id="step-3" class="hidden space-y-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-            <i data-lucide="image" class="w-6 h-6 text-pink-500"></i>
+            <i data-lucide="image" class="w-5 h-5 sm:w-6 sm:h-6 text-pink-500"></i>
             Selecionar o Ambiente para a Modelo
           </h2>
-          <p class="text-sm text-gray-400 mt-0.5">
+          <p class="text-xs sm:text-sm text-gray-400 mt-0.5">
             A modelo ruiva manterá a mesma postura, joias e iluminação de referência em qualquer ambiente escolhido.
           </p>
         </div>
-        <button onclick="goToStep(2)" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
+        <button onclick="goToStep(2)" class="self-start sm:self-auto text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
           <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Roteiros
         </button>
       </div>
 
       <!-- Banner com Nome do Produto em Destaque -->
-      <div class="glass-card rounded-xl p-3.5 px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
+      <div class="glass-card rounded-xl p-3.5 px-4 sm:px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
         <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
         <div class="text-xs">
           <span class="text-gray-400 font-medium">A modelo vestirá o produto:</span>
@@ -358,7 +379,7 @@
       </div>
 
       <!-- Informação da Modelo Fiel -->
-      <div class="glass-card rounded-xl p-4 flex items-center gap-4 border-l-4 border-l-pink-500">
+      <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border-l-4 border-l-pink-500">
         <img src="/references/Modelo%20e%20ambiente%201.jpeg" class="w-14 h-14 rounded-lg object-cover border border-pink-500/30 flex-shrink-0" alt="Modelo de Referência">
         <div class="text-xs text-gray-300">
           <p class="font-bold text-white text-sm">Modelo de Referência Bloqueada</p>
@@ -367,19 +388,19 @@
       </div>
 
       <!-- Grid dos 3 Ambientes -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="environments-container">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6" id="environments-container">
         <!-- Renderizado via JS -->
       </div>
 
       <!-- Ações Inferiores no Passo 3 (Voltar + Confirmar) -->
-      <div class="pt-4 flex items-center justify-between border-t border-gray-800/80">
-        <button onclick="goToStep(2)" class="py-3 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
+      <div class="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-gray-800/80">
+        <button onclick="goToStep(2)" class="py-3 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition">
           <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar para Passo 2 (Roteiros)
         </button>
         <button 
           id="btn-confirm-environment"
           onclick="handleGenerateFlowPrompt()"
-          class="py-3.5 px-8 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg shadow-pink-500/25 flex items-center gap-2 transition active:scale-95"
+          class="py-3.5 px-8 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg shadow-pink-500/25 flex items-center justify-center gap-2 transition active:scale-95"
         >
           <span>Gerar Prompts & Áudio</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -392,17 +413,17 @@
     <!-- PASSO 4: PROMPTS MASTER GOOGLE FLOW & ÁUDIO -->
     <!-- ========================================== -->
     <section id="step-4" class="hidden space-y-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-            <i data-lucide="check-circle-2" class="w-6 h-6 text-emerald-400"></i>
+            <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400"></i>
             Prompts Prontos para o Google Flow & Áudio
           </h2>
-          <p class="text-sm text-gray-400 mt-0.5">
+          <p class="text-xs sm:text-sm text-gray-400 mt-0.5">
             Copie os prompts abaixo para gerar a foto da modelo com o produto e as animações de vídeo no Google Flow.
           </p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <button onclick="goToStep(3)" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
             <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Voltar para Ambiente
           </button>
@@ -413,7 +434,7 @@
       </div>
 
       <!-- Banner com Nome do Produto em Destaque -->
-      <div class="glass-card rounded-xl p-3.5 px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
+      <div class="glass-card rounded-xl p-3.5 px-4 sm:px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
         <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
         <div class="text-xs">
           <span class="text-gray-400 font-medium">Produto Configurado nos Prompts:</span>
@@ -422,13 +443,13 @@
       </div>
 
       <!-- Alternador de Modo de Narração no Passo 4 -->
-      <div class="glass-card rounded-2xl p-4 border border-gray-800 bg-gray-900/60 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="glass-card rounded-2xl p-4 border border-gray-800 bg-gray-900/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center flex-shrink-0">
             <i data-lucide="sliders" class="w-5 h-5"></i>
           </div>
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <span class="text-xs font-bold text-white">Modo de Narração Ativo:</span>
               <span id="current-narration-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Narração Separada (CapCut)</span>
             </div>
@@ -438,12 +459,12 @@
           </div>
         </div>
 
-        <div class="flex items-center p-1 rounded-xl bg-[#0b0f19] border border-gray-800 text-xs w-full md:w-auto">
+        <div class="flex flex-col sm:flex-row items-center p-1 rounded-xl bg-[#0b0f19] border border-gray-800 text-xs w-full md:w-auto gap-1">
           <button 
             type="button" 
             id="tab-narration-separate" 
             onclick="switchNarrationMode('separate')" 
-            class="flex-1 md:flex-none px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md text-xs"
+            class="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md text-xs"
           >
             <i data-lucide="mic" class="w-3.5 h-3.5"></i> Narração Separada (CapCut)
           </button>
@@ -451,7 +472,7 @@
             type="button" 
             id="tab-narration-embedded" 
             onclick="switchNarrationMode('embedded')" 
-            class="flex-1 md:flex-none px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition text-xs"
+            class="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg font-medium text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition text-xs"
           >
             <i data-lucide="film" class="w-3.5 h-3.5"></i> Narração Embutida no Flow
           </button>
@@ -470,13 +491,13 @@
       </div>
 
       <!-- 1. Prompt Imagem da Modelo no Ambiente Vestindo o Produto -->
-      <div class="glass-card rounded-2xl p-6 border border-amber-500/30 bg-amber-500/5">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
+      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-amber-500/30 bg-amber-500/5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold text-xs uppercase tracking-wide">1. Prompt de Imagem (Keyframe Base)</span>
-            <span class="text-xs text-gray-300 font-medium">Modelo ruiva no ambiente selecionado <strong>vestindo o seu produto</strong></span>
+            <span class="text-xs text-gray-300 font-medium">Modelo ruiva no ambiente vestindo o produto</span>
           </div>
-          <button onclick="copyToClipboard('flow-model-image', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-amber-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+          <button onclick="copyToClipboard('flow-model-image', this)" class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg bg-gray-800 hover:bg-amber-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-1.5 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt Imagem
           </button>
         </div>
@@ -485,13 +506,13 @@
       </div>
 
       <!-- 2. Prompt Visual Cena 1 -->
-      <div class="glass-card rounded-2xl p-6 border border-gray-800">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
+      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="px-2.5 py-1 rounded-md bg-pink-500/20 text-pink-300 font-bold text-xs uppercase tracking-wide">2. Animação de Vídeo - Cena 1 (0 a 10s)</span>
             <span id="scene-1-mode-tag" class="text-xs text-gray-400">Gancho forte + Esticar tecido + Cortes rápidos de cores</span>
           </div>
-          <button onclick="copyToClipboard('flow-scene-1', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-pink-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+          <button onclick="copyToClipboard('flow-scene-1', this)" class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg bg-gray-800 hover:bg-pink-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-1.5 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt
           </button>
         </div>
@@ -499,13 +520,13 @@
       </div>
 
       <!-- 3. Prompt Visual Cena 2 -->
-      <div class="glass-card rounded-2xl p-6 border border-gray-800">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
+      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 font-bold text-xs uppercase tracking-wide">3. Animação de Vídeo - Cena 2 (10 a 20s)</span>
             <span id="scene-2-mode-tag" class="text-xs text-gray-400">Puxão no tecido + Virada 360 + Apontar para o carrinho</span>
           </div>
-          <button onclick="copyToClipboard('flow-scene-2', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-pink-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+          <button onclick="copyToClipboard('flow-scene-2', this)" class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg bg-gray-800 hover:bg-pink-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-1.5 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt
           </button>
         </div>
@@ -513,25 +534,25 @@
       </div>
 
       <!-- 4. Áudio PT-BR Completo para Locução -->
-      <div class="glass-card rounded-2xl p-6 border border-gray-800">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
+      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wide">4. Áudio da Locução (PT-BR)</span>
             <span class="text-xs text-gray-400">Cadência rápida estilo TikTok Shop (Voz no CapCut / ElevenLabs)</span>
           </div>
-          <button onclick="copyToClipboard('flow-audio', this)" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-emerald-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition">
+          <button onclick="copyToClipboard('flow-audio', this)" class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg bg-gray-800 hover:bg-emerald-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-1.5 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Áudio
           </button>
         </div>
         <textarea id="flow-audio" readonly class="w-full h-24 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-sans resize-none focus:outline-none focus:border-emerald-500"></textarea>
 
         <!-- Card de Recomendação de Voz para Alta Conversão -->
-        <div class="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-teal-950/30 border border-emerald-800/40 space-y-2 text-xs">
-          <div class="flex items-center justify-between">
+        <div class="mt-4 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-teal-950/30 border border-emerald-800/40 space-y-2 text-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-sm">
               <i data-lucide="mic" class="w-4 h-4 text-emerald-400"></i> Qual voz usar no vídeo? (Opções Gratuitas & Clonagem)
             </span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Padrão Ouro TikTok Shop</span>
+            <span class="self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Padrão Ouro TikTok Shop</span>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-300 pt-1">
             <div class="p-3 rounded-lg bg-black/40 border border-emerald-900/40">
@@ -559,11 +580,11 @@
       </div>
 
       <!-- Botões de Ação Inferiores no Passo 4 -->
-      <div class="pt-4 flex items-center justify-between border-t border-gray-800/80">
-        <button onclick="goToStep(3)" class="py-2.5 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition">
+      <div class="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-gray-800/80">
+        <button onclick="goToStep(3)" class="py-3 px-5 bg-gray-800/80 hover:bg-gray-800 text-gray-300 hover:text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition">
           <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar para Seleção de Ambiente
         </button>
-        <button onclick="resetWizard()" class="py-2.5 px-5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition active:scale-95 shadow-lg shadow-pink-500/20">
+        <button onclick="resetWizard()" class="py-3 px-5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-lg shadow-pink-500/20">
           <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Criar Outro Vídeo
         </button>
       </div>
@@ -602,13 +623,14 @@
     let autoDetectTimeout = null;
     let flowDataCache = null;
 
-    // Detecção Automática do Nome do Produto por Link
+    // Detecção Automática do Nome do Produto por Link ou Legenda
     function handleCompetitorUrlInput(val) {
       clearTimeout(autoDetectTimeout);
       const trimmed = val ? val.trim() : '';
+      const caption = document.getElementById('competitor-caption') ? document.getElementById('competitor-caption').value.trim() : '';
       if (trimmed && (trimmed.includes('tiktok.com') || trimmed.startsWith('http'))) {
         autoDetectTimeout = setTimeout(() => {
-          triggerAutoProductDetection(trimmed);
+          triggerAutoProductDetection(trimmed, caption);
         }, 700);
       }
     }
@@ -616,8 +638,21 @@
     function handleCompetitorUrlPaste(e) {
       setTimeout(() => {
         const val = document.getElementById('competitor-url').value;
-        if (val) triggerAutoProductDetection(val.trim());
+        const caption = document.getElementById('competitor-caption') ? document.getElementById('competitor-caption').value.trim() : '';
+        if (val) triggerAutoProductDetection(val.trim(), caption);
       }, 100);
+    }
+
+    function handleCompetitorCaptionInput(val) {
+      clearTimeout(autoDetectTimeout);
+      const trimmed = val ? val.trim() : '';
+      const productInput = document.getElementById('product-input');
+      const compUrl = document.getElementById('competitor-url') ? document.getElementById('competitor-url').value.trim() : '';
+      if (trimmed && (!productInput.value || productInput.value.trim() === '')) {
+        autoDetectTimeout = setTimeout(() => {
+          triggerAutoProductDetection(compUrl, trimmed);
+        }, 600);
+      }
     }
 
     function handleProductInput(val) {
@@ -639,19 +674,23 @@
       }, 100);
     }
 
-    async function triggerAutoProductDetection(url) {
+    async function triggerAutoProductDetection(url, contextText = '') {
       const statusEl = document.getElementById('product-detection-status');
       const productInput = document.getElementById('product-input');
       if (statusEl) {
         statusEl.className = 'text-xs text-pink-400 font-medium flex items-center gap-1.5 mt-1.5';
         statusEl.innerHTML = '<span class="w-3 h-3 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin"></span> Detectando produto automaticamente...';
+        statusEl.classList.remove('hidden');
       }
 
       try {
         const res = await fetch('/api/wizard/extract-product-info', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: url })
+          body: JSON.stringify({ 
+            url: url || '',
+            context_text: contextText || ''
+          })
         });
         const data = await res.json();
         if (data.success && data.product_name) {
@@ -762,9 +801,10 @@
       e.preventDefault();
       competitorUrl = document.getElementById('competitor-url').value.trim();
       productName = document.getElementById('product-input').value.trim();
+      const competitorCaption = document.getElementById('competitor-caption') ? document.getElementById('competitor-caption').value.trim() : '';
 
-      if (!competitorUrl && !productName) {
-        showToast("Por favor, insira o link do vídeo ou do produto.");
+      if (!competitorUrl && !productName && !competitorCaption) {
+        showToast("Por favor, insira o link do vídeo, legenda ou nome do produto.");
         return;
       }
 
@@ -777,7 +817,7 @@
         updateProductBadges(productName);
         showLoading(true, `Analisando criativo para: ${productName}...`);
       } else {
-        showLoading(true, "Analisando vídeo e identificando o produto do link...");
+        showLoading(true, "Analisando vídeo e identificando produto...");
       }
 
       try {
@@ -787,6 +827,7 @@
           body: JSON.stringify({
             video_format: selectedFormat,
             competitor_url: competitorUrl,
+            competitor_speech_or_caption: competitorCaption,
             product_input: productName
           })
         });
@@ -829,8 +870,8 @@
 
       container.innerHTML = generatedScripts.map(script => {
         return `
-          <div class="glass-card rounded-2xl p-6 border border-gray-800 flex flex-col justify-between glass-card-hover transition-all">
-            <div class="space-y-4">
+          <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800 flex flex-col justify-between glass-card-hover transition-all">
+            <div class="space-y-3.5 sm:space-y-4">
               <div class="flex items-center justify-between">
                 <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-pink-500/20 text-pink-300">
                   Opção ${script.id}
@@ -839,7 +880,7 @@
               </div>
 
               <div>
-                <h3 class="text-base font-bold text-white">${script.angle_title}</h3>
+                <h3 class="text-sm sm:text-base font-bold text-white">${script.angle_title}</h3>
                 <p class="text-xs text-pink-400 mt-0.5">${script.target_emotion}</p>
               </div>
 
@@ -867,16 +908,16 @@
             </div>
 
             <!-- Botões de Ação -->
-            <div class="pt-5 mt-4 border-t border-gray-800/80 flex items-center gap-2">
+            <div class="pt-4 sm:pt-5 mt-4 border-t border-gray-800/80 flex items-center gap-2">
               <button 
                 onclick="approveScript(${script.id})"
-                class="flex-1 py-2.5 px-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95"
+                class="flex-1 min-h-[44px] py-2.5 px-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95"
               >
                 <i data-lucide="check" class="w-3.5 h-3.5"></i> Aprovar Roteiro
               </button>
               <button 
                 onclick="rejectScript(${script.id})"
-                class="py-2.5 px-3 bg-gray-800/80 hover:bg-gray-800 text-gray-400 hover:text-white text-xs font-semibold rounded-xl transition"
+                class="min-h-[44px] px-3.5 bg-gray-800/80 hover:bg-gray-800 text-gray-400 hover:text-white text-xs font-semibold rounded-xl transition flex items-center justify-center"
                 title="Descartar opção"
               >
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -1077,10 +1118,10 @@
         const badge = document.getElementById(`badge-step-${i}`);
         if (section) section.classList.add('hidden');
         if (badge) {
-          badge.className = 'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all';
+          badge.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all';
           if (i < currentStep) {
             badge.classList.add('step-done');
-            badge.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+            badge.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>';
           } else if (i === currentStep) {
             badge.classList.add('step-active');
             badge.textContent = i;
