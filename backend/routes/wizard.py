@@ -11,7 +11,14 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
 from backend.database import get_db, DB_PATH, save_generation_to_supabase
-from backend.services.tiktok_collector import extract_tiktok_ids, fetch_tiktok_oembed, fetch_public_metadata_ytdlp
+from backend.services.tiktok_collector import (
+    extract_tiktok_ids,
+    fetch_tiktok_oembed,
+    fetch_public_metadata_ytdlp,
+    extract_tiktok_metadata_fast,
+    is_blacklisted_or_invalid,
+    BLACKLIST_PHRASES
+)
 from backend.services.ai_analyzer import run_llm_json
 
 router = APIRouter(prefix="/api/wizard", tags=["Video Creation Wizard"])
@@ -47,73 +54,71 @@ class GenerateFlowPromptRequest(BaseModel):
     narration_mode: Optional[str] = "separate" # "separate" (Outro site/CapCut) ou "embedded" (Direto no Flow)
 
 
-BLACKLIST_PHRASES = [
-    "tiktok - make your day", "make your day", "tiktok", "visit tiktok",
-    "watch, follow, and discover", "trending content", "log in to tiktok",
-    "descubra vídeos", "look feminino elegante", "tiktok shop", "para você", "for you",
-    "assista a mais vídeos", "video", "vídeo", "foryou", "fyp", "viral"
-]
+def extract_product_with_regex(text: str) -> Optional[str]:
+    """Heurística de identificação de categorias de produto via regex."""
+    if not text:
+        return None
+    fashion_patterns = [
+        r"((?:conjunto|vestido|blusa|calça|macaquinho|cropped|body|saia|blazer|short|kimono|camisa|jaqueta|regata|moletom|legging|pijama|macacão)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
+        r"((?:tênis|sandália|rasteirinha|papete|bota|salto|scarpin|mocassim|chinelo|mule)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
+        r"((?:bolsa|carteira|mala|mochila|cinto|colar|brinco|pulseira|óculos|relógio)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
+        r"((?:sérum|batom|gloss|rímel|base|corretivo|protetor|creme|perfume|modelador|escova|babyliss|shampoo|kit)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
+        r"((?:seladora|organizador|luminária|mini\s+\w+|suporte|massageador|aparador)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})"
+    ]
+    for pat in fashion_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            cand = m.group(1).title().strip()
+            if not is_blacklisted_or_invalid(cand):
+                return cand
+    return None
 
-def is_blacklisted_or_invalid(name: Optional[str]) -> bool:
-    if not name or len(name.strip()) < 3:
-        return True
-    low = name.strip().lower()
-    for b in BLACKLIST_PHRASES:
-        if b in low or low == b:
-            return True
-    return False
+
+def extract_product_with_gemini(text: str) -> Optional[str]:
+    """Extrai nome limpo do produto usando o Gemini com base em roteiro, legenda e título."""
+    if not text or is_blacklisted_or_invalid(text):
+        return None
+    system_prompt = """Você é um especialista em catálogo de e-commerce e TikTok Shop.
+Sua tarefa é extrair e identificar o NOME COMERCIAL EXATO do produto que está sendo demonstrado ou vendido neste conteúdo (roteiro, legenda ou título).
+Regras estritas:
+1. Retorne APENAS o nome comercial objetivo do produto (ex: "Bolsa Transversal Couro", "Tênis Plataforma Casual", "Vestido Canelado Midi", "Sérum Facial Clareador", "Mini Seladora Térmica").
+2. Remova nomes de contas (@usuario), hashtags, marcas irrelevantes, emojis e frases de clique ("compre aqui", "olha isso", "link na bio").
+3. Se não houver nenhum produto detectável, retorne null.
+4. Responda SEMPRE em JSON rigoroso: {"product_name": "Nome do Produto ou null"}"""
+
+    llm_res = run_llm_json(system_prompt, f"Identifique o produto neste conteúdo:\n{text}")
+    if llm_res and llm_res.get("product_name"):
+        cand = str(llm_res["product_name"]).strip()
+        if cand and cand.lower() != "null" and not is_blacklisted_or_invalid(cand):
+            return cand
+    return None
 
 
 async def resolve_product_name_from_url(raw_url: str, context_text: Optional[str] = None) -> Optional[str]:
-    """Extrai e normaliza o nome do produto a partir de uma URL ou texto bruto de contexto."""
+    """Extrai e normaliza o nome do produto a partir de uma URL ou texto bruto de contexto SEM usar cache antigo."""
     clean_url = raw_url.strip() if raw_url else ""
     caption = (context_text or "").strip()
 
-    # 1. Se o usuário passou texto de contexto (fala ou legenda), tentar extrair dele primeiro
+    # 1. Se o usuário passou texto de contexto (fala ou legenda), tentar extrair com Gemini primeiro
     if caption:
-        fashion_patterns = [
-            r"((?:conjunto|vestido|blusa|calça|macaquinho|cropped|body|saia|blazer|short|kimono|camisa|jaqueta|regata|moletom|legging|pijama|macacão)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
-            r"((?:tênis|sandália|rasteirinha|papete|bota|salto|scarpin|mocassim|chinelo|mule)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
-            r"((?:bolsa|carteira|mala|mochila|cinto|colar|brinco|pulseira|óculos|relógio)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
-            r"((?:sérum|batom|gloss|rímel|base|corretivo|protetor|creme|perfume|modelador|escova|babyliss|shampoo|kit)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})"
-        ]
-        for pat in fashion_patterns:
-            m = re.search(pat, caption, re.IGNORECASE)
-            if m:
-                cand = m.group(1).title().strip()
-                if not is_blacklisted_or_invalid(cand):
-                    return cand
+        gemini_name = extract_product_with_gemini(caption)
+        if gemini_name and not is_blacklisted_or_invalid(gemini_name):
+            return gemini_name
+        regex_name = extract_product_with_regex(caption)
+        if regex_name and not is_blacklisted_or_invalid(regex_name):
+            return regex_name
 
-    # 2. Se for link do TikTok, tentar descurtar caso seja vt.tiktok / vm.tiktok / /t/
+    # 2. Se for link do TikTok, buscar metadados frescos (sem cache de banco)
     if "tiktok.com" in clean_url.lower():
-        if "vt.tiktok.com" in clean_url or "vm.tiktok.com" in clean_url or "/t/" in clean_url:
-            try:
-                if httpx:
-                    async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
-                        resp = await client.head(clean_url)
-                        if str(resp.url) != clean_url:
-                            clean_url = str(resp.url)
-            except Exception:
-                pass
-
-        vid_match = re.search(r'/video/(\d+)', clean_url)
-        if vid_match:
-            vid_id = vid_match.group(1)
-            try:
-                conn = sqlite3.connect(DB_PATH)
-                row = conn.execute("SELECT title_caption FROM video_assets WHERE tiktok_video_id = ? OR tiktok_url LIKE ?", (vid_id, f"%{vid_id}%")).fetchone()
-                conn.close()
-                if row and row[0]:
-                    caption = row[0].split('#')[0].strip()
-            except Exception:
-                pass
-
-        # Se não achou no banco local, tenta oEmbed
-        if not caption:
-            oembed = await fetch_tiktok_oembed(clean_url)
-            cand_title = oembed.get("title") or ""
-            if cand_title and not is_blacklisted_or_invalid(cand_title):
-                caption = cand_title
+        meta_res = await extract_tiktok_metadata_fast(clean_url)
+        if meta_res.get("success") and meta_res.get("text"):
+            caption = meta_res["text"]
+            gemini_name = extract_product_with_gemini(caption)
+            if gemini_name and not is_blacklisted_or_invalid(gemini_name):
+                return gemini_name
+            regex_name = extract_product_with_regex(caption)
+            if regex_name and not is_blacklisted_or_invalid(regex_name):
+                return regex_name
 
     # 3. Checar query params na URL (ex: ?product_name=vestido-midi ou ?title=...)
     if not caption and ("?" in clean_url):
@@ -149,57 +154,21 @@ async def resolve_product_name_from_url(raw_url: str, context_text: Optional[str
         except Exception:
             pass
 
-    # 5. Tentar fetch web para ler <title> ou og:title se for página de e-commerce externa (não TikTok)
-    if not caption and (clean_url.startswith("http://") or clean_url.startswith("https://")) and "tiktok.com" not in clean_url:
-        try:
-            if httpx:
-                async with httpx.AsyncClient(timeout=3.5, follow_redirects=True) as client:
-                    resp = await client.get(clean_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
-                    if resp.status_code == 200:
-                        html_text = resp.text
-                        og_match = re.search(r'<meta\s+property=["\']og:title["\']\s+content=["\']([^"\']+)["\']', html_text, re.IGNORECASE)
-                        if og_match and not is_blacklisted_or_invalid(og_match.group(1)):
-                            caption = og_match.group(1).strip()
-                        else:
-                            title_match = re.search(r'<title>([^<]+)</title>', html_text, re.IGNORECASE)
-                            if title_match and not is_blacklisted_or_invalid(title_match.group(1)):
-                                caption = title_match.group(1).strip()
-        except Exception:
-            pass
-
     text_to_analyze = caption or (clean_url if not clean_url.startswith("http") else "")
     if not text_to_analyze or is_blacklisted_or_invalid(text_to_analyze):
         return None
 
-    # Normalizar com Gemini se disponível
-    system_prompt = """Você é um especialista em catálogo de moda e e-commerce do TikTok Shop.
-Sua tarefa é extrair e retornar apenas o NOME COMERCIAL LIMPO E ELEGANTE do produto citado no texto.
-Regras:
-1. Remova hashtags, emojis, nomes de lojas, frases de clique ("compre aqui", "olha isso", "link na bio").
-2. Retorne no formato: "Vestido Midi Canelado Elegante", "Tênis Plataforma Casual", "Bolsa Transversal Couro", "Sérum Clareador Facial", etc.
-3. Responda SEMPRE em JSON rigoroso: {"product_name": "Nome do Produto"}"""
+    # Tenta Gemini com todo o contexto
+    gemini_cand = extract_product_with_gemini(text_to_analyze)
+    if gemini_cand and not is_blacklisted_or_invalid(gemini_cand):
+        return gemini_cand
 
-    llm_res = run_llm_json(system_prompt, f"Identifique o produto neste texto: {text_to_analyze}")
-    if llm_res and llm_res.get("product_name"):
-        cand = llm_res["product_name"].strip()
-        if not is_blacklisted_or_invalid(cand):
-            return cand
+    # Tenta regex
+    regex_cand = extract_product_with_regex(text_to_analyze)
+    if regex_cand and not is_blacklisted_or_invalid(regex_cand):
+        return regex_cand
 
-    # Heurística abrangente de categorias
-    all_patterns = [
-        r"((?:conjunto|vestido|blusa|calça|macaquinho|cropped|body|saia|blazer|short|kimono|camisa|jaqueta|regata|moletom|legging|pijama|macacão)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
-        r"((?:tênis|sandália|rasteirinha|papete|bota|salto|scarpin|mocassim|chinelo|mule)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
-        r"((?:bolsa|carteira|mala|mochila|cinto|colar|brinco|pulseira|óculos|relógio)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})",
-        r"((?:sérum|batom|gloss|rímel|base|corretivo|protetor|creme|perfume|modelador|escova|babyliss|shampoo|kit)\s+[a-zA-Zá-úÁ-Ú]+(?:\s+[a-zA-Zá-úÁ-Ú]+){0,3})"
-    ]
-    for pat in all_patterns:
-        m = re.search(pat, text_to_analyze, re.IGNORECASE)
-        if m:
-            cand = m.group(1).title().strip()
-            if not is_blacklisted_or_invalid(cand):
-                return cand
-
-    # Limpeza de texto genérica
+    # Limpeza básica de texto
     cleaned = re.sub(r'#\w+', '', text_to_analyze)
     cleaned = re.sub(r'https?://\S+', '', cleaned).strip()
     words = [w for w in cleaned.split() if len(w) > 1 and not w.isdigit()][:4]
@@ -406,53 +375,70 @@ async def analyze_and_generate_scripts(req: StartWizardRequest):
     """
     Passo 1 & 2: Analisa o link do concorrente e gera 3 variações de roteiros
     com base no estilo de movimentação e ritmo de alta conversão.
+    Sem fallback silencioso: se a transcrição/legenda falhar, exige entrada manual.
     """
     comp_url = req.competitor_url.strip() if req.competitor_url else ""
     user_speech_caption = (req.competitor_speech_or_caption or "").strip()
-    id_info = extract_tiktok_ids(comp_url) if comp_url else {}
 
-    # Extração de metadados públicos
-    oembed = await fetch_tiktok_oembed(comp_url) if comp_url else {}
-    caption = user_speech_caption or oembed.get("title") or ""
+    # 1. Tentar obter metadados (legenda/título) do TikTok via oEmbed, yt-dlp ou meta tags
+    metadata_caption = ""
+    metadata_author = None
+    if comp_url:
+        meta_res = await extract_tiktok_metadata_fast(comp_url)
+        if meta_res.get("success") and meta_res.get("text"):
+            metadata_caption = meta_res["text"]
+            metadata_author = meta_res.get("author_name")
 
+    caption = user_speech_caption or metadata_caption or ""
+
+    # 2. REMOÇÃO DO FALLBACK SILENCIOSO:
+    # Se a extração automática falhou e o usuário não colou a fala/roteiro do concorrente:
+    if not caption:
+        return {
+            "success": False,
+            "error": "TRANSCRIPTION_FAILED",
+            "message": "O TikTok bloqueou a extração automática de áudio e legenda deste vídeo (proteção anti-bot do TikTok). Por favor, cole o que a pessoa fala no vídeo ou a legenda no campo 'Fala / Roteiro Transcrito do Concorrente' abaixo para prosseguirmos!"
+        }
+
+    # 3. DETECÇÃO DO NOME DO PRODUTO (GEMINI -> REGEX -> AVISO GENÉRICO):
     product_name = ""
-    # 1. Se o usuário passou um valor no product_input:
-    if req.product_input and req.product_input.strip():
-        val = req.product_input.strip()
-        if not is_blacklisted_or_invalid(val):
-            if val.startswith("http://") or val.startswith("https://") or "tiktok.com" in val.lower():
-                resolved = await resolve_product_name_from_url(val, context_text=caption)
-                if resolved and not is_blacklisted_or_invalid(resolved):
-                    product_name = resolved
-            else:
-                product_name = val
+    is_generic_product = False
+    product_warning = None
 
-    # 2. Se ainda não resolveu, tentar extrair da fala/legenda informada:
-    if not product_name and caption:
-        resolved = await resolve_product_name_from_url("", context_text=caption)
-        if resolved and not is_blacklisted_or_invalid(resolved):
-            product_name = resolved
+    # 3.1. Se o usuário digitou no campo de produto explicitamente e não é uma URL:
+    if req.product_input and req.product_input.strip() and not req.product_input.strip().startswith("http"):
+        product_name = req.product_input.strip()
 
-    # 3. Se ainda não resolveu, tentar extrair da URL do concorrente:
-    if not product_name and comp_url:
-        resolved = await resolve_product_name_from_url(comp_url, context_text=caption)
-        if resolved and not is_blacklisted_or_invalid(resolved):
-            product_name = resolved
-
-    # 4. Fallback genérico caso absolutamente nada seja detectado:
+    # 3.2. Usar Gemini a partir do roteiro, da legenda e do título:
     if not product_name or is_blacklisted_or_invalid(product_name):
-        product_name = "Look Feminino Elegante"
+        combined_context = f"Legenda/Título do Vídeo: {metadata_caption}\nFala/Roteiro do Vídeo: {user_speech_caption or caption}\nLink do Vídeo: {comp_url}"
+        gemini_prod = extract_product_with_gemini(combined_context)
+        if gemini_prod and not is_blacklisted_or_invalid(gemini_prod):
+            product_name = gemini_prod
 
+    # 3.3. Se o Gemini falhou ou não está configurado, usar heurística regex de categorias:
+    if not product_name or is_blacklisted_or_invalid(product_name):
+        regex_prod = extract_product_with_regex(caption)
+        if regex_prod and not is_blacklisted_or_invalid(regex_prod):
+            product_name = regex_prod
+
+    # 3.4. Se TUDO falhar: usar nome genérico e avisar expressamente:
+    if not product_name or is_blacklisted_or_invalid(product_name):
+        product_name = "Produto a Definir"
+        is_generic_product = True
+        product_warning = "Aviso: Não foi possível detectar o nome exato do produto automaticamente a partir do link ou fala. Nome definido provisoriamente como 'Produto a Definir' - recomendamos que você ajuste no campo de produto."
+
+    # 4. GERAÇÃO DOS 3 ROTEIROS COM GEMINI OU ENGINE DINÂMICA
     system_prompt = f"""Você é um diretor sênior de roteiros para TikTok Shop no nicho de Moda Feminina e E-commerce.
 Você cria roteiros com ritmo acelerado de cortes (jump cuts a cada 1.2s a 1.5s), estilo Provador POV (UGC-POV com celular cobrindo o rosto),
 com ganchos fortes nos primeiros 3 segundos, contagem de cores, quebra de objeções e CTA claro apontando para o carrinho do TikTok Shop.
-Você DEVE citar explicitamente o produto '{product_name}' em todos os roteiros.
+Você DEVE citar explicitamente o produto '{product_name}' em todos os roteiros e modelar a linguagem e argumentos reais da fala do concorrente.
 A modelo deve ter MOVIMENTAÇÃO CONTÍNUA E RÁPIDA adaptada ao produto, e finalizar aos 9-10s apontando o dedo para o carrinho.
 Responda SEMPRE em JSON rigoroso com exatamente 3 roteiros distintos."""
 
-    user_prompt = f"""Analise este criativo de concorrente:
+    user_prompt = f"""Modele este criativo de concorrente:
 URL: {comp_url}
-Legenda / Fala do Vídeo: {caption}
+Fala / Roteiro / Legenda do Concorrente: {caption}
 Produto Alvo: {product_name}
 Formato Escolhido: {req.video_format}
 
@@ -480,12 +466,15 @@ Formato JSON esperado:
     if llm_res and "scripts" in llm_res and len(llm_res["scripts"]) >= 3:
         scripts = llm_res["scripts"]
     else:
-        # Fallback inteligente dinâmico por categoria de produto
+        # Engine dinâmica adaptada à categoria detectada
         scripts = build_category_scripts(product_name, req.video_format, raw_context=caption)
 
     return {
         "success": True,
         "product_name": product_name,
+        "is_generic_product": is_generic_product,
+        "product_warning": product_warning,
+        "caption_used": caption,
         "video_format": req.video_format,
         "scripts": scripts
     }
