@@ -82,8 +82,13 @@
         </div>
       </div>
 
-      <!-- Botão Novo -->
+      <!-- Status do Agente & Botão Novo -->
       <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <button onclick="openAgentKeyModal()" id="btn-agent-key" class="text-xs font-bold text-amber-300 bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg transition">
+          <span id="agent-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+          <span id="agent-status-text">Conectar Agente IA</span>
+        </button>
         <button onclick="resetWizard()" class="text-xs text-gray-300 hover:text-white flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-800 hover:bg-gray-800 transition">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span class="hidden xs:inline">Novo</span>
         </button>
@@ -438,11 +443,102 @@
       </div>
 
       <!-- Banner com Nome do Produto em Destaque -->
-      <div class="glass-card rounded-xl p-3.5 px-4 sm:px-5 flex items-center gap-3 border border-pink-500/30 bg-pink-500/10">
-        <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
-        <div class="text-xs">
-          <span class="text-gray-400 font-medium">Produto em Produção:</span>
-          <span id="step2-product-badge" class="font-bold text-white text-sm ml-1.5"></span>
+      <div class="glass-card rounded-xl p-3.5 px-4 sm:px-5 flex items-center justify-between gap-3 border border-pink-500/30 bg-pink-500/10">
+        <div class="flex items-center gap-3">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-pink-400 flex-shrink-0"></i>
+          <div class="text-xs">
+            <span class="text-gray-400 font-medium">Produto Identificado pelo Agente:</span>
+            <span id="step2-product-badge" class="font-bold text-white text-sm ml-1.5"></span>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+          <i data-lucide="bot" class="w-3 h-3"></i> Agente Gemini Ativo
+        </span>
+      </div>
+
+      <!-- Painel Raio-X do Agente Diretor (O que a IA enxergou e transcreveu) -->
+      <div id="agent-xray-panel" class="glass-card rounded-2xl p-5 border border-indigo-500/30 bg-gradient-to-br from-indigo-950/30 via-[#101626] to-[#101626] space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+              <i data-lucide="scan-eye" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-white">Raio-X do Agente Diretor (Visão & Transcrição Real)</h3>
+              <p class="text-[11px] text-gray-400">Detalhes reais extraídos diretamente dos seus prints ou vídeo</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="p-3.5 rounded-xl bg-black/40 border border-gray-800/80 space-y-1.5">
+            <span class="text-[10px] font-bold text-pink-400 uppercase tracking-wider block">Tecido, Modelagem & Acabamento Detectados:</span>
+            <p id="xray-fabric" class="text-gray-200 leading-relaxed font-medium"></p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-black/40 border border-gray-800/80 space-y-1.5">
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Transcrição do Vídeo / Leitura dos Prints:</span>
+            <p id="xray-transcript" class="text-gray-300 leading-relaxed italic"></p>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block mb-2">Características Exatas da Peça Mapeadas para o Vídeo:</span>
+          <div id="xray-features" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-200 flex items-start gap-2.5">
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold text-white">Estratégia do Agente Diretor:</span>
+            <span id="xray-strategy" class="ml-1 text-gray-300"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caixa Conversacional do Agente: Pedir Ajustes em Tempo Real -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border border-pink-500/30 bg-[#101626]/90 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="message-square-plus" class="w-4 h-4 text-pink-400"></i>
+            Conversar com o Agente Diretor (Pedir Ajustes nos Roteiros e Movimentos)
+          </label>
+          <span class="text-[10px] text-pink-400 font-semibold">Reescreve na hora</span>
+        </div>
+
+        <!-- Resposta do Agente -->
+        <div id="agent-reply-box" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+          <span id="agent-reply-text"></span>
+        </div>
+
+        <!-- Atalhos Rápidos de Comando -->
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" onclick="setAgentQuickCommand('Quero movimentos mais rápidos: ela deve aproximar bem de perto em close-up e usar uma das mãos para puxar suavemente o bolso e a costura do tecido, demonstrando elasticidade e acabamento reforçado, mantendo sempre as características exatas da roupa.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            🔍 Close-up rápido puxando bolso e costura (1 mão)
+          </button>
+          <button type="button" onclick="setAgentQuickCommand('Inclua movimentos rápidos virando para mostrar bem os detalhes da parte de trás da roupa, o bolso traseiro e o caimento perfeito sem marcar nada.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            🔄 Mostrar detalhes da parte de trás e bolso
+          </button>
+          <button type="button" onclick="setAgentQuickCommand('Deixe a fala mais curta, direta e energética, focando na qualidade absurda do tecido que não fica transparente e parece peça cara de boutique.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            ⚡ Fala mais rápida e energética
+          </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <input 
+            type="text" 
+            id="agent-command-input" 
+            placeholder="Digite o que quer mudar (ex: 'Foque mais no zíper dourado e mostre a parte de trás em movimento rápido')..." 
+            class="flex-1 bg-[#0b0f19] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500"
+          >
+          <button 
+            type="button" 
+            onclick="handleAgentRefine()"
+            class="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-pink-500/20 flex-shrink-0"
+          >
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Refinar com Agente</span>
+          </button>
         </div>
       </div>
 
@@ -711,8 +807,63 @@
   <!-- Loading Overlay -->
   <div id="loading-overlay" class="fixed inset-0 bg-[#070a12]/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center">
     <div class="w-14 h-14 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin mb-4"></div>
-    <p id="loading-text" class="text-base font-bold text-white">Analisando vídeo do concorrente...</p>
-    <p class="text-xs text-gray-400 mt-1">Extraindo ritmo, ganchos e gerando 3 roteiros otimizados</p>
+    <p id="loading-text" class="text-base font-bold text-white">Agente Diretor analisando...</p>
+    <p class="text-xs text-gray-400 mt-1">Inspecionando detalhes visuais, transcrevendo e criando roteiros exclusivos</p>
+  </div>
+
+  <!-- Modal Conectar Chave Gemini (Agente IA) -->
+  <div id="agent-key-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-lg w-full p-6 border border-pink-500/40 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-500 to-indigo-600 flex items-center justify-center text-white">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Ativar Cérebro do Agente (Gemini IA)</h3>
+            <p class="text-xs text-gray-400">Necessário para enxergar fotos, transcrever vídeos e criar roteiros únicos</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAgentKeyModal()" class="text-gray-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-gray-300 bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+        <p class="font-bold text-white text-sm">Como pegar sua chave gratuita em 30 segundos:</p>
+        <ol class="list-decimal list-inside space-y-2 text-gray-300">
+          <li>
+            Clique aqui para abrir o Google:
+            <a href="https://aistudio.google.com/apikey" target="_blank" class="text-pink-400 hover:text-pink-300 underline font-bold ml-1">
+              Abrir Google AI Studio (Grátis) ↗
+            </a>
+          </li>
+          <li>Faça login com seu Gmail e clique no botão azul <strong>"Create API key"</strong>.</li>
+          <li>Copie o código gerado (começa com <code class="text-pink-300 bg-black/40 px-1.5 py-0.5 rounded">AIzaSy...</code>) e cole abaixo:</li>
+        </ol>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-200 mb-1.5">Sua Chave da API Gemini (GEMINI_API_KEY)</label>
+        <input 
+          type="password" 
+          id="gemini-key-input" 
+          placeholder="Cole aqui sua chave AIzaSy..." 
+          class="w-full bg-[#0b0f19] border border-gray-700 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-pink-500"
+        >
+        <p id="gemini-key-feedback" class="text-xs mt-2 hidden"></p>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" onclick="closeAgentKeyModal()" class="px-4 py-2.5 rounded-xl border border-gray-800 text-gray-400 hover:text-white text-xs font-semibold">
+          Fechar
+        </button>
+        <button type="button" id="btn-save-key" onclick="saveAndVerifyAgentKey()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-pink-500/25">
+          <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+          <span>Testar & Ativar Agente</span>
+        </button>
+      </div>
+    </div>
   </div>
 
 
@@ -733,9 +884,115 @@
     let autoDetectTimeout = null;
     let flowDataCache = null;
 
-    // Armazenamento de Arquivos Locais
+    // Armazenamento de Arquivos Locais & Estado do Agente
     let uploadedPhotosList = []; // [{ id, dataUrl, mime }]
     let uploadedVideoData = null; // { file, dataUrl, mime, frames: [] }
+    let currentAgentXray = null;
+    let serverHasGeminiKey = false;
+
+    function getStoredGeminiKey() {
+      return (localStorage.getItem('tiktok_studio_gemini_key') || '').trim();
+    }
+
+    function updateAgentStatusUI() {
+      const btn = document.getElementById('btn-agent-key');
+      const dot = document.getElementById('agent-status-dot');
+      const txt = document.getElementById('agent-status-text');
+      const isOnline = serverHasGeminiKey || getStoredGeminiKey().length > 15;
+
+      if (btn && dot && txt) {
+        if (isOnline) {
+          btn.className = "text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg transition";
+          dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+          txt.textContent = "Agente Gemini Ativo";
+        } else {
+          btn.className = "text-xs font-bold text-amber-300 bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg transition animate-pulse";
+          dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+          txt.textContent = "Conectar Agente IA";
+        }
+      }
+    }
+
+    async function checkServerAgentStatus() {
+      try {
+        const res = await fetch('/api/wizard/agent-status');
+        const data = await res.json();
+        serverHasGeminiKey = Boolean(data.server_has_key);
+      } catch (e) {
+        serverHasGeminiKey = false;
+      }
+      updateAgentStatusUI();
+    }
+
+    function openAgentKeyModal() {
+      const modal = document.getElementById('agent-key-modal');
+      const input = document.getElementById('gemini-key-input');
+      const feedback = document.getElementById('gemini-key-feedback');
+      if (input) input.value = getStoredGeminiKey();
+      if (feedback) feedback.classList.add('hidden');
+      if (modal) modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeAgentKeyModal() {
+      const modal = document.getElementById('agent-key-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveAndVerifyAgentKey() {
+      const input = document.getElementById('gemini-key-input');
+      const feedback = document.getElementById('gemini-key-feedback');
+      const btn = document.getElementById('btn-save-key');
+      const key = input ? input.value.trim() : '';
+
+      if (!key || key.length < 15) {
+        if (feedback) {
+          feedback.textContent = "Cole uma chave válida do Google AI Studio (começa com AIzaSy...).";
+          feedback.className = "text-xs mt-2 text-rose-400 font-semibold";
+          feedback.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      if (feedback) {
+        feedback.textContent = "Conectando ao Google Gemini e testando o Agente...";
+        feedback.className = "text-xs mt-2 text-pink-400 font-medium";
+        feedback.classList.remove('hidden');
+      }
+
+      try {
+        const res = await fetch('/api/wizard/verify-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key })
+        });
+        const data = await res.json();
+        if (btn) btn.disabled = false;
+
+        if (data.valid) {
+          localStorage.setItem('tiktok_studio_gemini_key', key);
+          updateAgentStatusUI();
+          if (feedback) {
+            feedback.textContent = "✅ " + data.message;
+            feedback.className = "text-xs mt-2 text-emerald-400 font-bold";
+          }
+          showToast("Agente Gemini ativado com sucesso!");
+          setTimeout(() => closeAgentKeyModal(), 900);
+        } else {
+          if (feedback) {
+            feedback.textContent = "❌ " + (data.message || "Chave inválida.");
+            feedback.className = "text-xs mt-2 text-rose-400 font-semibold";
+          }
+        }
+      } catch (e) {
+        if (btn) btn.disabled = false;
+        if (feedback) {
+          feedback.textContent = "Erro de conexão ao verificar a chave.";
+          feedback.className = "text-xs mt-2 text-rose-400";
+        }
+      }
+    }
 
     // Alternar Modo de Criação (Fotos vs Vídeo Baixado)
     function switchCreationMode(mode) {
@@ -894,7 +1151,7 @@
       }
     }
 
-    async function captureFrameFromVideo(file) {
+    async function captureMultiFramesFromVideo(file) {
       return new Promise((resolve) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
@@ -902,9 +1159,13 @@
         video.playsInline = true;
         const url = URL.createObjectURL(file);
         video.src = url;
+        const captured = [];
+        const percentages = [0.15, 0.4, 0.65, 0.85];
+        let idx = 0;
 
         video.onloadeddata = () => {
-          video.currentTime = Math.min(1.5, Math.max(0.5, (video.duration || 3) / 3));
+          const dur = video.duration || 6;
+          video.currentTime = Math.max(0.3, dur * percentages[idx]);
         };
 
         video.onseeked = () => {
@@ -914,20 +1175,76 @@
             canvas.height = Math.round((video.videoHeight / (video.videoWidth || 1)) * 480) || 640;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            captured.push({
+              data: canvas.toDataURL('image/jpeg', 0.78),
+              mime_type: 'image/jpeg'
+            });
+          } catch (e) {}
+
+          idx++;
+          if (idx < percentages.length) {
+            const dur = video.duration || 6;
+            video.currentTime = Math.min(dur - 0.1, dur * percentages[idx]);
+          } else {
             URL.revokeObjectURL(url);
-            resolve(dataUrl);
-          } catch (e) {
-            URL.revokeObjectURL(url);
-            resolve(null);
+            resolve(captured);
           }
         };
 
         video.onerror = () => {
           URL.revokeObjectURL(url);
-          resolve(null);
+          resolve(captured);
         };
       });
+    }
+
+    // Extrai o áudio do vídeo no navegador (16kHz Mono WAV leve ~300KB) para transcrição perfeita mesmo em vídeos grandes
+    async function extractAudioWavFromVideo(file) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioCtx({ sampleRate: 16000 });
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        const channelData = audioBuffer.getChannelData(0);
+        // Limita a até 35 segundos para garantir payload leve na Vercel
+        const maxSamples = Math.min(channelData.length, 16000 * 35);
+        const buffer = new ArrayBuffer(44 + maxSamples * 2);
+        const view = new DataView(buffer);
+
+        const writeString = (offset, str) => {
+          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        };
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + maxSamples * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, 16000, true);
+        view.setUint32(28, 16000 * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, maxSamples * 2, true);
+
+        let offset = 44;
+        for (let i = 0; i < maxSamples; i++, offset += 2) {
+          const s = Math.max(-1, Math.min(1, channelData[i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        audioCtx.close();
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        return await new Promise((res) => {
+          const r = new FileReader();
+          r.onload = (e) => res({ dataUrl: e.target.result, mime: 'audio/wav' });
+          r.onerror = () => res(null);
+          r.readAsDataURL(blob);
+        });
+      } catch (e) {
+        return null;
+      }
     }
 
     async function processVideoFile(file) {
@@ -938,15 +1255,16 @@
 
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
       fileNameEl.textContent = file.name;
-      fileSizeEl.textContent = `${sizeMb} MB - Carregado e pronto para análise`;
+      fileSizeEl.textContent = `${sizeMb} MB - Extraindo cenas e áudio para o Agente...`;
+      previewContainer.classList.remove('hidden');
+      dropzone.classList.add('hidden');
+      lucide.createIcons();
 
-      // Captura 1 frame visual do vídeo
-      const frameDataUrl = await captureFrameFromVideo(file);
-      const frames = frameDataUrl ? [{ data: frameDataUrl, mime_type: 'image/jpeg' }] : [];
+      // Captura 4 frames ao longo do vídeo para o Agente enxergar frente, costas e ações
+      const frames = await captureMultiFramesFromVideo(file);
 
-      // Converte para dataUrl se for até 4MB; para vídeos maiores, manda os frames e metadados
-      let videoBase64 = null;
-      if (file.size <= 4.2 * 1024 * 1024) {
+      // Se vídeo for pequeno (<= 3.2MB), envia vídeo completo; se maior, extrai o áudio WAV leve + os 4 frames
+      if (file.size <= 3.2 * 1024 * 1024) {
         const reader = new FileReader();
         reader.onload = (evt) => {
           uploadedVideoData = {
@@ -955,20 +1273,19 @@
             mime: file.type || 'video/mp4',
             frames: frames
           };
+          fileSizeEl.textContent = `${sizeMb} MB - Vídeo + ${frames.length} cenas prontos para o Agente!`;
         };
         reader.readAsDataURL(file);
       } else {
+        const extractedAudio = await extractAudioWavFromVideo(file);
         uploadedVideoData = {
           file: file,
-          dataUrl: null, // Evita estourar limite de payload da Vercel
-          mime: file.type || 'video/mp4',
+          dataUrl: extractedAudio ? extractedAudio.dataUrl : null,
+          mime: extractedAudio ? extractedAudio.mime : 'video/mp4',
           frames: frames
         };
+        fileSizeEl.textContent = `${sizeMb} MB - Áudio extraído + ${frames.length} cenas prontas para transcrição!`;
       }
-
-      previewContainer.classList.remove('hidden');
-      dropzone.classList.add('hidden');
-      lucide.createIcons();
     }
 
     function removeVideoFile(e) {
@@ -979,46 +1296,10 @@
       document.getElementById('dropzone-video').classList.remove('hidden');
     }
 
-    async function triggerAutoProductDetection(url, contextText = '') {
-      const statusEl = document.getElementById('product-detection-status');
-      const productInput = document.getElementById('product-input');
-      if (statusEl) {
-        statusEl.className = 'text-xs text-pink-400 font-medium flex items-center gap-1.5 mt-1.5';
-        statusEl.innerHTML = '<span class="w-3 h-3 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin"></span> Detectando produto automaticamente...';
-        statusEl.classList.remove('hidden');
-      }
-
-      try {
-        const res = await fetch('/api/wizard/extract-product-info', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            url: url || '',
-            context_text: contextText || ''
-          })
-        });
-        const data = await res.json();
-        if (data.success && data.product_name) {
-          productInput.value = data.product_name;
-          productName = data.product_name;
-          updateProductBadges(productName);
-          if (statusEl) {
-            statusEl.className = 'text-xs text-emerald-400 font-semibold flex items-center gap-1.5 mt-1.5';
-            statusEl.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i> Produto identificado: <strong>${data.product_name}</strong>`;
-            lucide.createIcons();
-          }
-          showToast(`Produto identificado: ${data.product_name}`);
-        } else {
-          if (statusEl) statusEl.classList.add('hidden');
-        }
-      } catch (err) {
-        if (statusEl) statusEl.classList.add('hidden');
-      }
-    }
-
     // Inicialização
     document.addEventListener('DOMContentLoaded', async () => {
       lucide.createIcons();
+      await checkServerAgentStatus();
       await loadEnvironments();
     });
 
@@ -1101,13 +1382,21 @@
       renderEnvironments();
     }
 
-    // Passo 1: Submissão e Análise (Fotos vs Vídeo Baixado)
+    // Passo 1: Submissão e Análise pelo Agente Diretor (Fotos vs Vídeo Baixado)
     async function handleAnalyzeSubmit(e) {
       e.preventDefault();
 
+      const storedKey = getStoredGeminiKey();
+      if (!serverHasGeminiKey && !storedKey) {
+        openAgentKeyModal();
+        showToast("Conecte sua Chave Gratuita do Gemini para o Agente funcionar!");
+        return;
+      }
+
       let payload = {
         mode: currentCreationMode,
-        video_format: selectedFormat
+        video_format: selectedFormat,
+        api_key: storedKey
       };
 
       if (currentCreationMode === 'photos') {
@@ -1115,7 +1404,7 @@
         const descVal = document.getElementById('product-description').value.trim();
 
         if (uploadedPhotosList.length === 0 && !prodVal && !descVal) {
-          showToast("Adicione pelo menos 1 foto ou preencha a descrição do produto.");
+          showToast("Adicione pelo menos 1 foto/print ou preencha a descrição do produto.");
           return;
         }
 
@@ -1126,8 +1415,8 @@
           mime_type: p.mime
         }));
 
-        const label = prodVal || "o produto";
-        showLoading(true, `Analisando visualmente fotos e gerando roteiros para ${label}...`);
+        const label = prodVal || "o produto nos prints";
+        showLoading(true, `Agente Gemini inspecionando fotos e detalhes de ${label}...`);
       } else {
         // Modo Vídeo
         const videoProd = document.getElementById('video-product-input').value.trim();
@@ -1148,8 +1437,7 @@
           payload.frames = uploadedVideoData.frames || [];
         }
 
-        const label = videoProd || "o vídeo";
-        showLoading(true, `Modelando vídeo do concorrente e gerando 3 variações de roteiros...`);
+        showLoading(true, `Agente Gemini ouvindo áudio, analisando cenas e criando 3 roteiros inéditos...`);
       }
 
       try {
@@ -1162,22 +1450,29 @@
         const data = await res.json();
         showLoading(false);
 
-        if (data.error === "INPUT_REQUIRED" || data.error === "VIDEO_REQUIRED") {
+        if (data.error === "API_KEY_REQUIRED") {
+          openAgentKeyModal();
+          showToast(data.message);
+          return;
+        }
+
+        if (data.error === "INPUT_REQUIRED" || data.error === "VIDEO_REQUIRED" || data.error === "AGENT_EXECUTION_ERROR") {
           alert(data.message);
           return;
         }
 
         if (data.scripts && data.scripts.length > 0) {
           generatedScripts = data.scripts;
+          currentAgentXray = data.agent_xray || {};
           if (data.product_name) {
             productName = data.product_name;
             if (document.getElementById('product-input')) document.getElementById('product-input').value = productName;
             if (document.getElementById('video-product-input')) document.getElementById('video-product-input').value = productName;
             updateProductBadges(productName);
           }
-          if (data.is_generic_product && data.product_warning) {
-            showToast(data.product_warning);
-          }
+          renderAgentXray(currentAgentXray);
+          const replyBox = document.getElementById('agent-reply-box');
+          if (replyBox) replyBox.classList.add('hidden');
           renderScripts();
           goToStep(2);
         } else {
@@ -1186,7 +1481,100 @@
       } catch (err) {
         showLoading(false);
         console.error(err);
-        showToast("Erro de conexão ao processar o criativo.");
+        showToast("Erro de conexão ao processar com o Agente.");
+      }
+    }
+
+    function renderAgentXray(xray) {
+      const panel = document.getElementById('agent-xray-panel');
+      if (!panel) return;
+      const fabricEl = document.getElementById('xray-fabric');
+      const transcriptEl = document.getElementById('xray-transcript');
+      const featuresEl = document.getElementById('xray-features');
+      const strategyEl = document.getElementById('xray-strategy');
+
+      if (fabricEl) {
+        fabricEl.textContent = xray.fabric_and_finish || xray.product_identified || "Identificado pelas imagens e descrição do produto.";
+      }
+      if (transcriptEl) {
+        transcriptEl.textContent = xray.competitor_transcript || "Análise visual direta dos detalhes da peça e oferta.";
+      }
+      if (strategyEl) {
+        strategyEl.textContent = xray.agent_strategy || "Foco em close-up rápido mostrando costura, bolso e elasticidade com chamada para o carrinho.";
+      }
+      if (featuresEl) {
+        const feats = Array.isArray(xray.detected_features) ? xray.detected_features : [];
+        featuresEl.innerHTML = feats.map(f => `
+          <span class="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-200 text-xs font-medium flex items-center gap-1.5">
+            <i data-lucide="check" class="w-3 h-3 text-emerald-400"></i> ${f}
+          </span>
+        `).join('');
+      }
+      lucide.createIcons();
+    }
+
+    function setAgentQuickCommand(cmdText) {
+      const inp = document.getElementById('agent-command-input');
+      if (inp) {
+        inp.value = cmdText;
+        inp.focus();
+      }
+    }
+
+    async function handleAgentRefine() {
+      const inp = document.getElementById('agent-command-input');
+      const cmd = inp ? inp.value.trim() : '';
+      if (!cmd) {
+        showToast("Digite ou clique em uma instrução para o Agente ajustar os roteiros.");
+        return;
+      }
+
+      const storedKey = getStoredGeminiKey();
+      if (!serverHasGeminiKey && !storedKey) {
+        openAgentKeyModal();
+        return;
+      }
+
+      showLoading(true, "Agente Diretor reescrevendo roteiros e movimentos conforme seu pedido...");
+
+      try {
+        const res = await fetch('/api/wizard/refine-with-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: storedKey,
+            product_name: productName,
+            current_scripts: generatedScripts,
+            agent_xray: currentAgentXray,
+            user_command: cmd,
+            video_format: selectedFormat
+          })
+        });
+        const data = await res.json();
+        showLoading(false);
+
+        if (data.error === "API_KEY_REQUIRED") {
+          openAgentKeyModal();
+          return;
+        }
+
+        if (data.success && data.scripts && data.scripts.length > 0) {
+          generatedScripts = data.scripts;
+          renderScripts();
+          const replyBox = document.getElementById('agent-reply-box');
+          const replyText = document.getElementById('agent-reply-text');
+          if (replyBox && replyText) {
+            replyText.textContent = data.agent_reply || "Roteiros e movimentos atualizados com sucesso!";
+            replyBox.classList.remove('hidden');
+          }
+          if (inp) inp.value = '';
+          showToast("Agente atualizou os 3 roteiros!");
+        } else {
+          showToast(data.message || "Não foi possível refinar agora.");
+        }
+      } catch (e) {
+        showLoading(false);
+        showToast("Erro ao comunicar com o Agente.");
       }
     }
 
@@ -1223,7 +1611,7 @@
               <!-- Cena 1 -->
               <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
                 <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                  <i data-lucide="play" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Gancho & Cores
+                  <i data-lucide="play" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Gancho & Detalhes
                 </span>
                 <p class="text-xs text-gray-200 leading-relaxed">${script.scene_1_text}</p>
               </div>
@@ -1293,7 +1681,7 @@
         return;
       }
 
-      showLoading(true, "Gerando prompts para o Google Flow e áudio PT-BR...");
+      showLoading(true, "Gerando prompts para o Google Flow com detalhes exatos da peça...");
 
       try {
         const res = await fetch('/api/wizard/generate-flow-prompt', {
@@ -1305,7 +1693,9 @@
             script_data: selectedScript,
             product_name: productName,
             video_format: selectedFormat,
-            narration_mode: selectedNarrationMode
+            narration_mode: selectedNarrationMode,
+            agent_xray: currentAgentXray,
+            api_key: getStoredGeminiKey()
           })
         });
 

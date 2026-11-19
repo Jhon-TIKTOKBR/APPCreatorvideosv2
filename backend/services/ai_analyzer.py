@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import logging
 from typing import Dict, Any, Optional, List
@@ -10,8 +11,14 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-def get_genai_client():
-    api_key = os.getenv("GEMINI_API_KEY")
+
+def has_configured_api_key(custom_api_key: Optional[str] = None) -> bool:
+    key = (custom_api_key or "").strip() or (os.getenv("GEMINI_API_KEY") or "").strip()
+    return bool(key and len(key) > 15)
+
+
+def get_genai_client(custom_api_key: Optional[str] = None):
+    api_key = (custom_api_key or "").strip() or (os.getenv("GEMINI_API_KEY") or "").strip()
     if not api_key:
         return None
     try:
@@ -21,57 +28,95 @@ def get_genai_client():
         return None
 
 
-def run_llm_json(system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
+def parse_json_safely(raw_text: str) -> Optional[Dict[str, Any]]:
+    if not raw_text:
+        return None
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+    try:
+        return json.loads(text)
+    except Exception:
+        m = re.search(r"\{[\s\S]*\}", text)
+        if m:
+            try:
+                return json.loads(m.group(0))
+            except Exception:
+                pass
+    return None
+
+
+def run_llm_json(system_prompt: str, user_prompt: str, api_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
-    Executa chamada para o Gemini Flash com retorno JSON estrito e baixo custo.
-    Se nenhuma chave estiver configurada, gera uma resposta analítica estruturada
-    para fins de desenvolvimento e validação.
+    Executa chamada para o Gemini Flash com retorno JSON estrito e fallback entre modelos.
     """
-    client = get_genai_client()
-    if client:
+    client = get_genai_client(api_key)
+    if not client:
+        return None
+
+    preferred_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    models_to_try = [preferred_model]
+    for fallback_m in ["gemini-2.5-flash", "gemini-2.0-flash"]:
+        if fallback_m not in models_to_try:
+            models_to_try.append(fallback_m)
+
+    for model_name in models_to_try:
         try:
-            # Modelos econômicos: gemini-2.5-flash ou gemini-2.0-flash
-            model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
             response = client.models.generate_content(
                 model=model_name,
                 contents=user_prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=system_prompt,
                     response_mime_type="application/json",
-                    temperature=0.2
+                    temperature=0.3
                 )
             )
-            if response.text:
-                return json.loads(response.text)
+            if response and response.text:
+                parsed = parse_json_safely(response.text)
+                if parsed:
+                    return parsed
         except Exception as e:
-            logger.error(f"Erro na chamada do Gemini API: {e}. Alternando para fallback local.")
+            logger.error(f"Erro na chamada do Gemini API ({model_name}): {e}")
+            continue
 
-    # Fallback heurístico inteligente se offline ou sem chave configurada
     return None
 
 
-def run_llm_multimodal(system_prompt: str, contents: Any) -> Optional[Dict[str, Any]]:
+def run_llm_multimodal(system_prompt: str, contents: Any, api_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Executa chamada multimodal para o Gemini Flash (imagens, áudio, vídeo + texto)
-    com retorno em JSON estrito.
+    com retorno em JSON estrito e fallback automático de modelo.
     """
-    client = get_genai_client()
-    if client:
+    client = get_genai_client(api_key)
+    if not client:
+        return None
+
+    preferred_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    models_to_try = [preferred_model]
+    for fallback_m in ["gemini-2.5-flash", "gemini-2.0-flash"]:
+        if fallback_m not in models_to_try:
+            models_to_try.append(fallback_m)
+
+    for model_name in models_to_try:
         try:
-            model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
             response = client.models.generate_content(
                 model=model_name,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=system_prompt,
                     response_mime_type="application/json",
-                    temperature=0.25
+                    temperature=0.35
                 )
             )
-            if response.text:
-                return json.loads(response.text)
+            if response and response.text:
+                parsed = parse_json_safely(response.text)
+                if parsed:
+                    return parsed
         except Exception as e:
-            logger.error(f"Erro na chamada multimodal do Gemini: {e}")
+            logger.error(f"Erro na chamada multimodal do Gemini ({model_name}): {e}")
+            continue
+
     return None
 
 

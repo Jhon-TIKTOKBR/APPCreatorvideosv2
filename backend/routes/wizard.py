@@ -1,3 +1,4 @@
+import os
 import re
 import urllib.parse
 import sqlite3
@@ -24,7 +25,11 @@ from backend.services.tiktok_collector import (
     is_blacklisted_or_invalid,
     BLACKLIST_PHRASES
 )
-from backend.services.ai_analyzer import run_llm_json, run_llm_multimodal
+from backend.services.ai_analyzer import (
+    run_llm_json,
+    run_llm_multimodal,
+    has_configured_api_key
+)
 
 router = APIRouter(prefix="/api/wizard", tags=["Video Creation Wizard"])
 
@@ -40,6 +45,9 @@ def safe_b64decode(data_uri: str) -> bytes:
     except Exception:
         return b""
 
+class VerifyKeyRequest(BaseModel):
+    api_key: str
+
 class StartWizardRequest(BaseModel):
     mode: Optional[str] = "photos" # "photos", "video" ou "link"
     video_format: str = "UGC-POV" # UGC, POV, UGC-POV
@@ -48,14 +56,26 @@ class StartWizardRequest(BaseModel):
     images: Optional[List[Dict[str, Any]]] = None # [{"data": "base64...", "mime_type": "image/jpeg"}]
     video_data: Optional[Dict[str, Any]] = None # {"data": "base64...", "mime_type": "video/mp4" ou "audio/wav"}
     frames: Optional[List[Dict[str, Any]]] = None # [{"data": "base64...", "mime_type": "image/jpeg"}]
+    api_key: Optional[str] = None # Chave Gemini enviada pelo navegador do usuário
+    agent_instruction: Optional[str] = None # Instrução extra para o Agente Diretor
     # Retrocompatibilidade com links antigos
     competitor_url: Optional[str] = None
     competitor_speech_or_caption: Optional[str] = None
 
 
+class AgentRefineRequest(BaseModel):
+    api_key: Optional[str] = None
+    product_name: str
+    current_scripts: List[Dict[str, Any]]
+    agent_xray: Optional[Dict[str, Any]] = None
+    user_command: str
+    video_format: str = "UGC-POV"
+
+
 class ExtractProductInfoRequest(BaseModel):
     url: str
-    context_text: Optional[str] = None # Texto adicional opcional (legenda ou fala)
+    context_text: Optional[str] = None
+    api_key: Optional[str] = None
 
 
 class ScriptVariation(BaseModel):
@@ -75,6 +95,34 @@ class GenerateFlowPromptRequest(BaseModel):
     product_name: str
     video_format: str = "UGC-POV"
     narration_mode: Optional[str] = "separate" # "separate" (Outro site/CapCut) ou "embedded" (Direto no Flow)
+    agent_xray: Optional[Dict[str, Any]] = None
+    api_key: Optional[str] = None
+
+
+@router.get("/agent-status")
+def get_agent_status():
+    """Verifica se o servidor na Vercel já possui GEMINI_API_KEY configurada."""
+    server_has_key = has_configured_api_key()
+    return {
+        "server_has_key": server_has_key,
+        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    }
+
+
+@router.post("/verify-key")
+def verify_gemini_api_key(req: VerifyKeyRequest):
+    """Testa em tempo real se a chave Gemini colada pelo usuário é válida."""
+    key = (req.api_key or "").strip()
+    if len(key) < 15:
+        return {"valid": False, "message": "A chave parece curta demais. Copie a chave completa do Google AI Studio (começa com AIza...)."}
+    res = run_llm_json(
+        "Responda apenas JSON válido.",
+        'Retorne exatamente: {"status": "online"}',
+        api_key=key
+    )
+    if res and res.get("status") == "online":
+        return {"valid": True, "message": "Agente Gemini conectado e funcionando 100%!"}
+    return {"valid": False, "message": "Não foi possível autenticar essa chave no Google AI Studio. Verifique se copiou corretamente."}
 
 
 def extract_product_with_regex(text: str) -> Optional[str]:
@@ -414,15 +462,24 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
 @router.post("/analyze-and-generate-scripts")
 async def analyze_and_generate_scripts(req: StartWizardRequest):
     """
-    Passo 1 & 2: Analisa a entrada escolhida pelo criador e gera 3 variações de roteiros:
-    - Modo 'photos': Analisa 1 a 4 fotos/prints do produto + descrição via Gemini Vision.
-    - Modo 'video': Analisa o arquivo de vídeo (.mp4) ou áudio do concorrente + frames.
-    - Modo 'link' (legado): Fallback para link caso o usuário use retrocompatibilidade.
+    Agente Diretor de Criação TikTok Shop:
+    - Modo 'photos': Inspeciona 1 a 4 fotos/prints + descrição via Gemini Vision, gera Raio-X Visual e 3 roteiros 100% inéditos.
+    - Modo 'video': Transcreve o áudio/vídeo (.mp4) + analisa os frames do concorrente via Gemini Multimodal e modela 3 roteiros exclusivos.
     """
     mode = req.mode or "photos"
+    user_api_key = (req.api_key or "").strip() or None
+    extra_instruction = (req.agent_instruction or "").strip()
+
+    # Verifica se há chave Gemini ativa (no servidor Vercel ou enviada pelo navegador do usuário)
+    if not has_configured_api_key(user_api_key):
+        return {
+            "success": False,
+            "error": "API_KEY_REQUIRED",
+            "message": "O Agente Diretor precisa da sua Chave Gratuita do Gemini para enxergar os prints, transcrever o vídeo e criar roteiros 100% inéditos. Clique para conectar sua chave em 30 segundos!"
+        }
 
     # =========================================================================
-    # ESTRATÉGIA 1: FOTOS / PRINTS + TEXTO / DESCRIÇÃO (100% à prova de bloqueios)
+    # ESTRATÉGIA 1: FOTOS / PRINTS + TEXTO / DESCRIÇÃO (AGENTE VISION)
     # =========================================================================
     if mode == "photos":
         images_list = req.images or []
@@ -437,81 +494,112 @@ async def analyze_and_generate_scripts(req: StartWizardRequest):
             }
 
         product_name = prod_input if (prod_input and not prod_input.startswith("http")) else ""
-        is_generic_product = False
-        product_warning = None
-        visual_details = ""
-        scripts = None
 
-        # Se temos imagens e o Gemini está disponível:
-        if types and images_list:
-            system_prompt = """Você é um diretor sênior de roteiros para TikTok Shop especializado em vídeos de alta conversão (formato Provador UGC-POV).
-Sua missão:
-1. Inspecione visualmente as fotos/prints do produto enviadas: analise tecido (canelado, linho, algodão, etc.), modelagem (caimento, fendas, corte), detalhes especiais (bolsos, zíperes, costuras reforçadas, botões, decote, caimento na cintura/quadril) e cores disponíveis.
-2. Identifique ou confirme o nome comercial do produto com precisão.
-3. Crie 3 variações de roteiros persuasivos adaptados para esse produto no TikTok Shop.
-Cada roteiro deve conter:
-- Cena 1 (0-10s): Gancho ultra dinâmico citando o produto e destacando os detalhes visuais reais vistos nas fotos.
-- Cena 2 (10-20s): Quebra de objeção (não marca, tecido encorpado, não é transparente) e chamada para ação com a modelo estendendo o dedo indicador apontando firme para o carrinho aos 9-10s.
-- movements_summary: Instruções detalhadas de movimentos rápidos da modelo no espelho (cobrindo o rosto com o celular), puxando suavemente o bolso, a costura e o tecido para provar elasticidade e acabamento.
-Responda SEMPRE em JSON rigoroso:
+        system_prompt = """Você é um Agente Diretor Sênior de Criação de Vídeos Virais para TikTok Shop Brasil (especialista em UGC-POV de alta conversão).
+Sua missão é agir como um verdadeiro Diretor de Criação autônomo:
+1. RAIO-X VISUAL E TÉCNICO: Inspecione minuciosamente cada foto/print enviado (inclusive textos presentes em prints de anúncios) e a descrição do usuário. Identifique:
+   - O nome comercial exato e modelo do produto.
+   - O tecido/material aparente, textura, elasticidade, acabamento de costura.
+   - Todos os detalhes específicos da peça: parte da frente, parte de trás, bolsos, zíperes, botões, cós, fendas, caimento.
+2. PROIBIÇÃO DE ROTEIROS GENÉRICOS: NUNCA use textos engessados ou clichês de outros produtos. Cada frase dos 3 roteiros DEVE falar especificamente das características reais deste produto que você enxergou nos prints e na descrição.
+3. DIREÇÃO DE MOVIMENTOS RÁPIDOS E CLOSE-UP DE DETALHES: Em 'movements_summary', dirija a modelo com movimentos rápidos e dinâmicos: aproximar-se bem de perto do espelho em close-up de alta definição, usar uma das mãos para puxar suavemente o bolso, o cós ou a costura do tecido demonstrando elasticidade e acabamento reforçado, virar rapidamente para mostrar os detalhes da parte de trás e caimento 360°, sempre mantendo 100% as características exatas da roupa, e finalizar aos 9-10s apontando o dedo indicador para o carrinho do TikTok Shop.
+
+Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 {
-  "product_name": "Nome Comercial do Produto",
-  "visual_details": "Resumo dos detalhes reais vistos nas fotos (bolso, zíper, tecido, cores)",
+  "product_name": "Nome Comercial Exato do Produto",
+  "visual_details": "Descrição técnica em inglês das características exatas da peça (cor, corte, bolsos, parte de trás, tecido, costuras) para preservar 100% a fidelidade visual no gerador de vídeo",
+  "agent_xray": {
+    "product_identified": "Nome e modelo detalhado identificado pelo Agente",
+    "fabric_and_finish": "Análise do tecido, elasticidade, gramatura e acabamento",
+    "detected_features": [
+      "Detalhe real 1 detectado nas fotos/print",
+      "Detalhe real 2 detectado (ex: bolso, costura, parte de trás)",
+      "Detalhe real 3 detectado",
+      "Detalhe real 4 detectado"
+    ],
+    "competitor_transcript": "Texto/descrição lido dos prints ou pontos-chave extraídos da oferta",
+    "agent_strategy": "Explicação direta do Agente Diretor sobre como estruturou os ganchos e os close-ups rápidos de mão mostrando os detalhes da peça"
+  },
   "scripts": [
     {
       "id": 1,
-      "angle_title": "Desejo & Contagem de Cores",
-      "target_emotion": "Desejo incontrolável de ter todas as cores",
-      "scene_1_text": "texto da cena 1 citando o produto",
-      "scene_2_text": "texto da cena 2 com CTA para o carrinho",
-      "full_audio": "texto completo do áudio",
-      "movements_summary": "direção de movimentos rápidos da modelo"
+      "angle_title": "Título do Ângulo 1 (Focado no Desejo e Detalhes Reais da Peça)",
+      "target_emotion": "Emoção alvo",
+      "scene_1_text": "Fala natural em PT-BR para Cena 1 (0-10s) citando os detalhes reais vistos nas fotos",
+      "scene_2_text": "Fala natural em PT-BR para Cena 2 (10-20s) quebrando objeção real da peça + CTA urgente para o carrinho laranja",
+      "full_audio": "Junção fluida de scene_1_text + scene_2_text",
+      "movements_summary": "Direção detalhada de movimentos rápidos: close-up aproximando no espelho, uma das mãos puxando suavemente o bolso e a costura mostrando elasticidade, giro mostrando parte de trás e dedo apontando para o carrinho aos 9-10s"
+    },
+    {
+      "id": 2,
+      "angle_title": "Título do Ângulo 2 (Quebra de Objeção & Close-up de Acabamento/Costura)",
+      "target_emotion": "Surpresa com a qualidade real",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
+    },
+    {
+      "id": 3,
+      "angle_title": "Título do Ângulo 3 (Caimento Frente/Costas & Custo-Benefício)",
+      "target_emotion": "Certeza de compra inteligente",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
     }
   ]
 }"""
+
+        user_text = f"""DADOS ENVIADOS PELO CRIADOR:
+- Nome do produto informado: {product_name or 'Identifique automaticamente pelos prints/fotos e descrição'}
+- Descrição / Detalhes fornecidos: {desc or 'Extraia todos os detalhes diretamente das imagens/prints anexados'}
+- Formato de vídeo: {req.video_format}
+- Quantidade de fotos/prints anexados: {len(images_list)}
+{f'- Instrução especial do criador: {extra_instruction}' if extra_instruction else ''}
+
+Faça o Raio-X completo das imagens e do texto e crie 3 roteiros 100% exclusivos e ultra persuasivos para este produto."""
+
+        gemini_res = None
+        if types and images_list:
             multimodal_contents = []
             for img in images_list[:4]:
                 raw = safe_b64decode(img.get("data", ""))
                 if raw:
                     mime = img.get("mime_type", "image/jpeg")
                     multimodal_contents.append(types.Part.from_bytes(data=raw, mime_type=mime))
-
-            user_text = f"""Produto informado pelo criador: {product_name or 'Identifique detalhadamente pelas fotos'}
-Descrição e especificações fornecidas: {desc or 'Observe as fotos anexadas'}
-Formato do vídeo: {req.video_format}
-
-Analise os detalhes visuais das fotos e gere os 3 roteiros completos com ritmo acelerado."""
             multimodal_contents.append(user_text)
+            gemini_res = run_llm_multimodal(system_prompt, multimodal_contents, api_key=user_api_key)
+        else:
+            gemini_res = run_llm_json(system_prompt, user_text, api_key=user_api_key)
 
-            gemini_res = run_llm_multimodal(system_prompt, multimodal_contents)
-            if gemini_res and "scripts" in gemini_res and len(gemini_res["scripts"]) >= 3:
-                scripts = gemini_res["scripts"]
-                if not product_name and gemini_res.get("product_name"):
-                    product_name = str(gemini_res["product_name"]).strip()
-                visual_details = gemini_res.get("visual_details", "")
+        if not gemini_res or "scripts" not in gemini_res or len(gemini_res.get("scripts", [])) < 1:
+            return {
+                "success": False,
+                "error": "AGENT_EXECUTION_ERROR",
+                "message": "O Agente Gemini não conseguiu processar a resposta com a chave atual. Verifique se sua Chave Gemini está ativa e tente novamente."
+            }
 
-        # Fallback inteligente se Gemini offline ou sem imagens
-        if not scripts:
-            if not product_name:
-                product_name = extract_product_with_gemini(desc) or extract_product_with_regex(desc) or "Produto a Definir"
-                if product_name == "Produto a Definir":
-                    is_generic_product = True
-                    product_warning = "Aviso: Nome do produto definido como 'Produto a Definir'. Recomendamos digitar o nome exato no campo de produto."
-            scripts = build_category_scripts(product_name, req.video_format, raw_context=desc, visual_details=desc)
+        scripts = gemini_res["scripts"]
+        if not product_name and gemini_res.get("product_name"):
+            product_name = str(gemini_res["product_name"]).strip()
+        if not product_name:
+            product_name = "Produto Identificado"
 
         return {
             "success": True,
+            "ai_engine_active": True,
             "mode": "photos",
             "product_name": product_name,
-            "is_generic_product": is_generic_product,
-            "product_warning": product_warning,
-            "visual_details": visual_details,
+            "is_generic_product": False,
+            "visual_details": gemini_res.get("visual_details", ""),
+            "agent_xray": gemini_res.get("agent_xray", {}),
             "video_format": req.video_format,
             "scripts": scripts
         }
 
     # =========================================================================
-    # ESTRATÉGIA 2: SUBIR VÍDEO (.MP4) / ÁUDIO DO CONCORRENTE
+    # ESTRATÉGIA 2: SUBIR VÍDEO (.MP4) / ÁUDIO DO CONCORRENTE (AGENTE MULTIMODAL)
     # =========================================================================
     elif mode == "video":
         video_info = req.video_data
@@ -528,37 +616,72 @@ Analise os detalhes visuais das fotos e gere os 3 roteiros completos com ritmo a
             }
 
         product_name = prod_input if (prod_input and not prod_input.startswith("http")) else ""
-        is_generic_product = False
-        product_warning = None
-        scripts = None
 
-        if types and (video_info or frames_list):
-            system_prompt = """Você é um diretor sênior de criação de vídeos de alta conversão para TikTok Shop.
+        system_prompt = """Você é um Agente Diretor Sênior de Engenharia Reversa de Vídeos Virais para TikTok Shop Brasil.
 Sua missão:
-1. Analise o vídeo/áudio do concorrente e as cenas anexadas.
-2. Transcreva a fala e extraia os ganchos mentais, ritmo, quebra de objeções e CTA usados no vídeo.
-3. Identifique o produto demonstrado.
-4. Modele esse ritmo e gere 3 novas variações de roteiros otimizadas para o produto do vendedor.
-Cada roteiro deve conter:
-- Cena 1 (0-10s): Gancho forte de alta retenção.
-- Cena 2 (10-20s): Quebra de objeção e CTA com a modelo apontando para o carrinho aos 9-10s.
-- movements_summary: Instruções de movimentos rápidos no espelho (estilo UGC-POV).
-Responda SEMPRE em JSON rigoroso:
+1. TRANSCRIÇÃO REAL E ANÁLISE VISUAL: Ouça o áudio/vídeo anexado e inspecione os frames capturados do vídeo do concorrente.
+   - Transcreva palavra por palavra o que é dito no vídeo em 'competitor_transcript' (se o vídeo tiver apenas música/texto na tela, transcreva os textos visíveis nos frames e descreva a ação exata da cena).
+   - Identifique o produto exato, tecido, detalhes de frente/costas, bolsos, costura e caimento mostrados no vídeo.
+2. MODELAGEM DE ALTA CONVERSÃO: Crie 3 roteiros 100% inéditos e exclusivos modelados na estrutura vencedora desse vídeo, mas superando o concorrente em persuasão e ritmo.
+3. MOVIMENTOS RÁPIDOS E CLOSE-UP: Em 'movements_summary', inclua movimentos rápidos aproximando-se da câmera/espelho para mostrar bem de perto os detalhes, usando uma das mãos em close-up para puxar suavemente o bolso e a costura do tecido demonstrando elasticidade e acabamento reforçado, mostrando parte de trás e frente mantendo as características exatas da roupa, e apontando para o carrinho aos 9-10s.
+
+Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 {
-  "product_name": "Nome Comercial do Produto",
-  "competitor_transcript": "Transcrição do que é falado no vídeo",
+  "product_name": "Nome Comercial Exato do Produto",
+  "visual_details": "Descrição técnica em inglês das características exatas da peça vista no vídeo (cor, corte, bolsos, parte de trás, tecido, costuras)",
+  "agent_xray": {
+    "product_identified": "Produto e modelo identificados no vídeo",
+    "fabric_and_finish": "Tecido, elasticidade e acabamento observados nas cenas",
+    "detected_features": [
+      "Gancho/Detalhe 1 extraído do vídeo",
+      "Detalhe visual 2 da peça (bolso, costura, parte de trás)",
+      "Gatilho de conversão 3 identificado",
+      "Movimento-chave 4 observado"
+    ],
+    "competitor_transcript": "Transcrição completa do áudio falado no vídeo e/ou textos na tela",
+    "agent_strategy": "Análise do Agente Diretor: o que o concorrente fez no vídeo e como melhoramos os 3 novos roteiros"
+  },
   "scripts": [
     {
       "id": 1,
-      "angle_title": "Desejo & Contagem de Cores",
-      "target_emotion": "Desejo incontrolável de ter todas as cores",
-      "scene_1_text": "texto cena 1",
-      "scene_2_text": "texto cena 2 com CTA para o carrinho",
-      "full_audio": "áudio completo",
-      "movements_summary": "direção de movimentos rápidos"
+      "angle_title": "Título do Ângulo 1 (Modelado do Concorrente + Gancho Mais Forte)",
+      "target_emotion": "Emoção alvo",
+      "scene_1_text": "Fala em PT-BR Cena 1 (0-10s)",
+      "scene_2_text": "Fala em PT-BR Cena 2 (10-20s) + CTA para o carrinho",
+      "full_audio": "Áudio completo unido",
+      "movements_summary": "Direção de movimentos rápidos com close-up puxando bolso/costura com uma das mãos, mostrando costas e apontando para o carrinho"
+    },
+    {
+      "id": 2,
+      "angle_title": "Título do Ângulo 2 (Foco em Detalhes, Bolso, Costura e Elasticidade)",
+      "target_emotion": "Surpresa e confiança",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
+    },
+    {
+      "id": 3,
+      "angle_title": "Título do Ângulo 3 (Quebra de Objeção & Oferta Irresistível)",
+      "target_emotion": "Urgência de compra",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
     }
   ]
 }"""
+
+        user_text = f"""DADOS DO VÍDEO ENVIADO:
+- Produto informado pelo vendedor: {product_name or 'Identifique automaticamente pelo vídeo e frames'}
+- Observações / Instruções do vendedor: {desc or user_caption or 'Transcreva o vídeo e modele os 3 roteiros com base no produto real do vídeo'}
+- Formato desejado: {req.video_format}
+{f'- Comando extra ao Agente: {extra_instruction}' if extra_instruction else ''}
+
+Transcreva o vídeo/cenas, faça o Raio-X completo e gere os 3 roteiros exclusivos."""
+
+        gemini_res = None
+        if types and (video_info or frames_list):
             multimodal_contents = []
             if video_info:
                 v_raw = safe_b64decode(video_info.get("data", ""))
@@ -566,96 +689,127 @@ Responda SEMPRE em JSON rigoroso:
                 if v_raw:
                     multimodal_contents.append(types.Part.from_bytes(data=v_raw, mime_type=v_mime))
 
-            for frame in frames_list[:3]:
+            for frame in frames_list[:4]:
                 f_raw = safe_b64decode(frame.get("data", ""))
                 if f_raw:
                     multimodal_contents.append(types.Part.from_bytes(data=f_raw, mime_type=frame.get("mime_type", "image/jpeg")))
 
-            user_text = f"""Produto do vendedor: {product_name or 'Identifique pelo vídeo'}
-Observações e detalhes adicionais: {desc or user_caption or 'Nenhuma'}
-Formato do vídeo: {req.video_format}
-
-Analise o concorrente e gere 3 roteiros modelados com perfeição."""
             multimodal_contents.append(user_text)
+            gemini_res = run_llm_multimodal(system_prompt, multimodal_contents, api_key=user_api_key)
+        else:
+            gemini_res = run_llm_json(system_prompt, user_text, api_key=user_api_key)
 
-            gemini_res = run_llm_multimodal(system_prompt, multimodal_contents)
-            if gemini_res and "scripts" in gemini_res and len(gemini_res["scripts"]) >= 3:
-                scripts = gemini_res["scripts"]
-                if not product_name and gemini_res.get("product_name"):
-                    product_name = str(gemini_res["product_name"]).strip()
+        if not gemini_res or "scripts" not in gemini_res or len(gemini_res.get("scripts", [])) < 1:
+            return {
+                "success": False,
+                "error": "AGENT_EXECUTION_ERROR",
+                "message": "Não foi possível transcrever ou processar o vídeo com a chave atual. Se o vídeo for muito longo, tente enviar os prints na aba 'Fotos / Prints' ou adicione uma observação sobre o produto."
+            }
 
-        if not scripts:
-            if not product_name:
-                product_name = extract_product_with_gemini(user_caption or desc) or extract_product_with_regex(user_caption or desc) or "Produto a Definir"
-                if product_name == "Produto a Definir":
-                    is_generic_product = True
-                    product_warning = "Aviso: Nome do produto definido provisoriamente como 'Produto a Definir'."
-            scripts = build_category_scripts(product_name, req.video_format, raw_context=user_caption or desc, visual_details=desc)
+        scripts = gemini_res["scripts"]
+        if not product_name and gemini_res.get("product_name"):
+            product_name = str(gemini_res["product_name"]).strip()
+        if not product_name:
+            product_name = "Produto Identificado"
 
         return {
             "success": True,
+            "ai_engine_active": True,
             "mode": "video",
             "product_name": product_name,
-            "is_generic_product": is_generic_product,
-            "product_warning": product_warning,
+            "is_generic_product": False,
+            "visual_details": gemini_res.get("visual_details", ""),
+            "agent_xray": gemini_res.get("agent_xray", {}),
             "video_format": req.video_format,
             "scripts": scripts
         }
 
-    # =========================================================================
-    # ESTRATÉGIA LEGADA: LINK DO TIKTOK
-    # =========================================================================
-    comp_url = req.competitor_url.strip() if req.competitor_url else ""
-    user_speech_caption = (req.competitor_speech_or_caption or "").strip()
+    return {
+        "success": False,
+        "error": "INVALID_MODE",
+        "message": "Use o modo 'photos' (Fotos/Prints + Descrição) ou 'video' (Subir Vídeo .mp4)."
+    }
 
-    metadata_caption = ""
-    if comp_url:
-        meta_res = await extract_tiktok_metadata_fast(comp_url)
-        if meta_res.get("success") and meta_res.get("text"):
-            metadata_caption = meta_res["text"]
 
-    caption = user_speech_caption or metadata_caption or ""
-    if not caption:
+@router.post("/refine-with-agent")
+async def refine_with_agent(req: AgentRefineRequest):
+    """
+    Chat Conversacional com o Agente Diretor:
+    Permite ao usuário pedir qualquer alteração em linguagem natural (ex: 'mostre mais a parte de trás e o bolso',
+    'deixe os movimentos mais rápidos', 'mude o gancho para promoção') e o Agente reescreve os roteiros na hora!
+    """
+    user_api_key = (req.api_key or "").strip() or None
+    if not has_configured_api_key(user_api_key):
         return {
             "success": False,
-            "error": "TRANSCRIPTION_FAILED",
-            "message": "O TikTok bloqueou a extração automática de áudio e legenda deste link. Recomendamos usar a aba '📸 Fotos / Prints + Texto' ou '📤 Subir Vídeo (.mp4)' para gerar instantaneamente sem bloqueios!"
+            "error": "API_KEY_REQUIRED",
+            "message": "Conecte sua Chave Gemini no topo para conversar e pedir ajustes ao Agente!"
         }
 
-    product_name = ""
-    is_generic_product = False
-    product_warning = None
+    system_prompt = """Você é o Agente Diretor Sênior de Criação de Vídeos para TikTok Shop Brasil.
+O usuário está revisando os 3 roteiros gerados e enviou um COMANDO DE AJUSTE para você.
+Sua missão:
+1. Obedeça 100% ao pedido do usuário (seja sobre mostrar detalhes da parte de trás, puxar o bolso e a costura em close-up rápido com uma das mãos, mudar o tom da fala, destacar elasticidade ou alterar a oferta).
+2. Reescreva os 3 roteiros e as direções de movimentos ('movements_summary') aplicando exatamente o que o usuário pediu, mantendo sempre as características exatas da roupa/produto.
+3. Escreva uma resposta curta e amigável em 'agent_reply' confirmando o que você alterou.
 
-    if req.product_input and req.product_input.strip() and not req.product_input.strip().startswith("http"):
-        product_name = req.product_input.strip()
+Responda SEMPRE em JSON rigoroso:
+{
+  "agent_reply": "Pronto! Ajustei os 3 roteiros para...",
+  "visual_details": "Descrição técnica atualizada em inglês dos detalhes visuais e movimentos solicitados para o Google Flow",
+  "scripts": [
+    {
+      "id": 1,
+      "angle_title": "...",
+      "target_emotion": "...",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
+    },
+    {
+      "id": 2,
+      "angle_title": "...",
+      "target_emotion": "...",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
+    },
+    {
+      "id": 3,
+      "angle_title": "...",
+      "target_emotion": "...",
+      "scene_1_text": "...",
+      "scene_2_text": "...",
+      "full_audio": "...",
+      "movements_summary": "..."
+    }
+  ]
+}"""
 
-    if not product_name or is_blacklisted_or_invalid(product_name):
-        combined_context = f"Legenda/Título do Vídeo: {metadata_caption}\nFala/Roteiro: {user_speech_caption or caption}"
-        gemini_prod = extract_product_with_gemini(combined_context)
-        if gemini_prod and not is_blacklisted_or_invalid(gemini_prod):
-            product_name = gemini_prod
+    user_prompt = f"""Produto: {req.product_name}
+Formato: {req.video_format}
+Raio-X Atual do Produto: {req.agent_xray}
+Roteiros Atuais: {req.current_scripts}
 
-    if not product_name or is_blacklisted_or_invalid(product_name):
-        regex_prod = extract_product_with_regex(caption)
-        if regex_prod and not is_blacklisted_or_invalid(regex_prod):
-            product_name = regex_prod
+COMANDO DO USUÁRIO PARA O AGENTE:
+"{req.user_command}"
 
-    if not product_name or is_blacklisted_or_invalid(product_name):
-        product_name = "Produto a Definir"
-        is_generic_product = True
-        product_warning = "Aviso: Nome definido provisoriamente como 'Produto a Definir'."
+Aplique o ajuste solicitado agora mesmo nos 3 roteiros e nos movimentos."""
 
-    scripts = build_category_scripts(product_name, req.video_format, raw_context=caption)
+    res = run_llm_json(system_prompt, user_prompt, api_key=user_api_key)
+    if not res or "scripts" not in res:
+        return {
+            "success": False,
+            "message": "O Agente não conseguiu processar o ajuste no momento. Tente novamente."
+        }
 
     return {
         "success": True,
-        "mode": "link",
-        "product_name": product_name,
-        "is_generic_product": is_generic_product,
-        "product_warning": product_warning,
-        "caption_used": caption,
-        "video_format": req.video_format,
-        "scripts": scripts
+        "agent_reply": res.get("agent_reply", "Roteiros e movimentos atualizados conforme seu pedido!"),
+        "visual_details": res.get("visual_details", ""),
+        "scripts": res["scripts"]
     }
 
 
@@ -670,6 +824,11 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
     env_id = req.environment_id
     script = req.script_data
     prod = (req.product_name or "Look Feminino Elegante").strip()
+    xray = req.agent_xray or {}
+    features_list = xray.get("detected_features") or []
+    fabric_info = xray.get("fabric_and_finish") or ""
+    custom_movements = script.get("movements_summary") or ""
+    garment_spec = f"{prod} ({fabric_info}; {', '.join(features_list[:4])})" if (fabric_info or features_list) else prod
 
     # Especificação exata da iluminação e fundo na reflexão do espelho
     if env_id == "ambiente_1":
@@ -683,7 +842,7 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
         env_bg_en = "Behind her in the reflection is a modern apartment entryway with sleek console table, contemporary solid accent wall, soft warm indirect ambient glow with NO mirror behind the model."
 
     # Prompt 1: Imagem da Modelo no Ambiente Selecionado Vestindo o Produto (Keyframe Base)
-    model_image_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph. The entire image frame is the direct front reflection inside a clean flat full-length wall mirror. We see the direct front reflection of a curvy copper-ginger red-haired woman with soft natural shoulder-length waves. She is looking directly forward into the mirror, holding a white smartphone with both hands at chest level, pointing its rear camera at the mirror glass so the white phone body directly covers and occludes her upper face and eyes. She is wearing {prod}, delicate thin gold chain necklace with small pendant, classic gold link watch on right wrist, thin gold bracelet on left wrist, clean white sneakers. {env_bg_en}. Strict composition rule: The camera view is the mirror reflection itself; the model is facing forward into the mirror; behind her back is the solid room interior only, absolutely NO secondary mirror behind her, NO dual mirrors, NO reflection of her back. Ultra-detailed 8K photorealism, high-end commercial fashion lookbook, pristine fabric texture and silhouette of {prod}, authentic floor reflections, clean diffuse lighting matching reference photo without harsh shadows."""
+    model_image_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph. The entire image frame is the direct front reflection inside a clean flat full-length wall mirror. We see the direct front reflection of a curvy copper-ginger red-haired woman with soft natural shoulder-length waves. She is looking directly forward into the mirror, holding a white smartphone with both hands at chest level, pointing its rear camera at the mirror glass so the white phone body directly covers and occludes her upper face and eyes. She is wearing {garment_spec}, delicate thin gold chain necklace with small pendant, classic gold link watch on right wrist, thin gold bracelet on left wrist, clean white sneakers. {env_bg_en}. Strict composition rule: The camera view is the mirror reflection itself; the model is facing forward into the mirror; behind her back is the solid room interior only, absolutely NO secondary mirror behind her, NO dual mirrors, NO reflection of her back. Ultra-detailed 8K photorealism, high-end commercial fashion lookbook, pristine fabric texture and exact garment characteristics of {garment_spec}, authentic floor reflections, clean diffuse lighting matching reference photo without harsh shadows."""
 
     scene_1_audio = script.get("scene_1_text") or ""
     scene_2_audio = script.get("scene_2_text") or ""
@@ -692,15 +851,15 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
 
     # Prompts de Vídeo - Modo 1: Narração Separada em Outro Site (CapCut / ElevenLabs)
     # Foco 100% no visual hiper-rápido de movimentos, aproximação em close-up, puxão de bolso/costura com uma das mãos e cortes sem ruído de voz no Flow
-    scene_1_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 1 (0 to 10 seconds). The camera viewpoint is the reflection in a full-length wall mirror, with the solid room interior behind the model (strictly NO mirror behind her back). High energy, ultra-fast dynamic commercial pacing. Curvy copper-ginger red-haired model with natural shoulder waves, holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing delicate gold chain necklace, gold link watch on right wrist, thin gold bracelet on left wrist, white sneakers. Wearing {prod}. {env_bg_en}. Continuous high-speed agile micro-movements: model immediately steps forward into a sharp close-up view near the mirror; with her free hand, she firmly pulls and stretches the pocket opening, waistband, and reinforced fabric seam outward demonstrating extreme elasticity and rapid bounce-back; rubs fingers across the fabric weave to highlight texture and high-density finish with zero transparency; glides her hand across the waist and hips; swiftly pivots 45 degrees and turns to showcase rear pockets, back seams, and 360-degree flattering fit. Ultra-fast jump cuts (every 1.2s to 1.5s) switching outfit color variations in rapid cadence. Strict visual consistency: perfectly preserve the exact garment details, pockets, stitching, and cut of {prod} without distortion. Ultra-realistic 8K photorealism, exact reference lighting with authentic floor reflections."""
+    scene_1_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 1 (0 to 10 seconds). The camera viewpoint is the reflection in a full-length wall mirror, with the solid room interior behind the model (strictly NO mirror behind her back). High energy, ultra-fast dynamic commercial pacing. Curvy copper-ginger red-haired model with natural shoulder waves, holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing delicate gold chain necklace, gold link watch on right wrist, thin gold bracelet on left wrist, white sneakers. Wearing {garment_spec}. {env_bg_en}. High-definition close-up shot and continuous high-speed agile micro-movements ({custom_movements}): model immediately steps forward into a sharp close-up view near the mirror to show details up close; with her free hand, she gently pulls the pocket and fabric seam demonstrating elasticity and reinforced stitching; rubs fingers across the fabric weave to highlight texture and zero transparency; swiftly pivots and turns to showcase the back details, rear pockets, back seams, and 360-degree fit. Ultra-fast jump cuts (every 1.2s to 1.5s). Strict visual consistency: always preserve 100% the exact garment characteristics, pockets, stitching, and cut of {garment_spec} without distortion. Ultra-realistic 8K photorealism, exact reference lighting with authentic floor reflections."""
 
-    scene_2_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 2 (10 to 20 seconds). Direct mirror reflection POV (solid room behind the model, NO mirror behind her back). Fast energetic commercial fashion TikTok. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {prod}. {env_bg_en}. Rapid continuous actions: model steps close to mirror in macro detail, uses her free hand to pull and snap the fabric at the pocket and side seam proving heavy fabric weight, elasticity, and flawless reinforced stitching; rubs hand down thigh and hip; briskly turns from front to profile and back to exhibit rear pockets and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Strict garment consistency: retains exact clothing design, pockets, and seams of {prod}. Ultra-realistic 8K photorealism, exact diffuse boutique overhead lighting and dark floor reflections."""
+    scene_2_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 2 (10 to 20 seconds). Direct mirror reflection POV (solid room behind the model, NO mirror behind her back). Fast energetic commercial fashion TikTok. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid continuous actions ({custom_movements}): model steps close to mirror in high-definition macro detail, uses one hand to gently pull the pocket and fabric seam demonstrating elasticity and reinforced finish; briskly turns from front to profile and back to exhibit rear details, pockets, and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Strict garment consistency: always retains exact clothing design, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism, exact diffuse boutique overhead lighting and dark floor reflections."""
 
     # Prompts de Vídeo - Modo 2: Narração Embutida Diretamente no Vídeo Gerado pelo Flow
     # Inclui o diálogo em áudio nativo em português brasileiro sincronizado com as ações visuais
-    scene_1_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 1 (0 to 10 seconds). Direct mirror reflection POV (solid room interior behind model, strictly NO mirror behind her back). High energy, ultra-fast dynamic commercial pacing. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing gold jewelry, gold watch on right wrist, white sneakers. Wearing {prod}. {env_bg_en}. Continuous high-speed agile micro-movements: model immediately steps forward into a sharp close-up view near the mirror; with her free hand, she firmly pulls and stretches the pocket opening, waistband, and reinforced fabric seam outward demonstrating extreme elasticity and rapid bounce-back; rubs fingers across the fabric weave to highlight texture and high-density finish with zero transparency; glides her hand across the waist and hips; swiftly pivots 45 degrees and turns to showcase rear pockets, back seams, and 360-degree flattering fit. Ultra-fast jump cuts (every 1.2s to 1.5s) switching outfit color variations. Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_1_audio}". The model speaks with vibrant high-converting TikTok Shop cadence; her lips and face remain naturally occluded behind the white smartphone held in front of her face, ensuring natural acoustic delivery without lip-sync distortion. Strict garment consistency: preserves exact clothing details, pockets, and seams of {prod}. Ultra-realistic 8K photorealism, exact reference lighting with authentic floor reflections."""
+    scene_1_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 1 (0 to 10 seconds). Direct mirror reflection POV (solid room interior behind model, strictly NO mirror behind her back). High energy, ultra-fast dynamic commercial pacing. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing gold jewelry, gold watch on right wrist, white sneakers. Wearing {garment_spec}. {env_bg_en}. High-definition close-up shot and continuous high-speed agile micro-movements ({custom_movements}): model immediately steps forward into a sharp close-up view near the mirror to show details up close; with her free hand, she gently pulls the pocket and fabric seam demonstrating elasticity and reinforced stitching; rubs fingers across the fabric weave to highlight texture and zero transparency; swiftly pivots and turns to showcase the back details, rear pockets, back seams, and 360-degree fit. Ultra-fast jump cuts (every 1.2s to 1.5s). Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_1_audio}". The model speaks with vibrant high-converting TikTok Shop cadence; her lips and face remain naturally occluded behind the white smartphone held in front of her face. Strict garment consistency: always preserves exact clothing details, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism, exact reference lighting with authentic floor reflections."""
 
-    scene_2_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 2 (10 to 20 seconds). Direct mirror reflection POV (solid room behind model, strictly NO mirror behind her back). Fast energetic commercial fashion TikTok. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {prod}. {env_bg_en}. Rapid continuous actions: model steps close to mirror in macro detail, uses her free hand to pull and snap the fabric at the pocket and side seam proving heavy fabric weight, elasticity, and flawless reinforced stitching; rubs hand down thigh and hip; briskly turns from front to profile and back to exhibit rear pockets and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_2_audio}". Persuasive call-to-action tone delivered in clear Brazilian Portuguese, concluding right as the finger points to the cart at 9-10 seconds. Strict garment consistency: retains exact clothing design, pockets, and seams of {prod}. Ultra-realistic 8K photorealism, exact diffuse boutique overhead lighting and dark floor reflections."""
+    scene_2_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 2 (10 to 20 seconds). Direct mirror reflection POV (solid room behind model, strictly NO mirror behind her back). Fast energetic commercial fashion TikTok. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid continuous actions ({custom_movements}): model steps close to mirror in high-definition macro detail, uses one hand to gently pull the pocket and fabric seam demonstrating elasticity and reinforced finish; briskly turns from front to profile and back to exhibit rear details, pockets, and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_2_audio}". Persuasive call-to-action tone delivered in clear Brazilian Portuguese, concluding right as the finger points to the cart at 9-10 seconds. Strict garment consistency: always retains exact clothing design, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism, exact diffuse boutique overhead lighting and dark floor reflections."""
 
     # Seleção dos prompts ativos de acordo com a opção escolhida
     if narration_mode == "embedded":
