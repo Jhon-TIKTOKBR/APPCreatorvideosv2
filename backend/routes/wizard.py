@@ -561,13 +561,15 @@ Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 Faça o Raio-X completo das imagens e do texto e crie 3 roteiros 100% exclusivos e ultra persuasivos para este produto."""
 
         gemini_res = None
-        if types and images_list:
+        if images_list:
             multimodal_contents = []
             for img in images_list[:4]:
-                raw = safe_b64decode(img.get("data", ""))
-                if raw:
-                    mime = img.get("mime_type", "image/jpeg")
-                    multimodal_contents.append(types.Part.from_bytes(data=raw, mime_type=mime))
+                raw_data = img.get("data", "")
+                if raw_data:
+                    multimodal_contents.append({
+                        "data": raw_data,
+                        "mime_type": img.get("mime_type", "image/jpeg")
+                    })
             multimodal_contents.append(user_text)
             gemini_res = run_llm_multimodal(system_prompt, multimodal_contents, api_key=user_api_key)
         else:
@@ -681,18 +683,20 @@ Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 Transcreva o vídeo/cenas, faça o Raio-X completo e gere os 3 roteiros exclusivos."""
 
         gemini_res = None
-        if types and (video_info or frames_list):
+        if video_info or frames_list:
             multimodal_contents = []
-            if video_info:
-                v_raw = safe_b64decode(video_info.get("data", ""))
-                v_mime = video_info.get("mime_type", "video/mp4")
-                if v_raw:
-                    multimodal_contents.append(types.Part.from_bytes(data=v_raw, mime_type=v_mime))
+            if video_info and video_info.get("data"):
+                multimodal_contents.append({
+                    "data": video_info.get("data"),
+                    "mime_type": video_info.get("mime_type", "video/mp4")
+                })
 
             for frame in frames_list[:4]:
-                f_raw = safe_b64decode(frame.get("data", ""))
-                if f_raw:
-                    multimodal_contents.append(types.Part.from_bytes(data=f_raw, mime_type=frame.get("mime_type", "image/jpeg")))
+                if frame.get("data"):
+                    multimodal_contents.append({
+                        "data": frame.get("data"),
+                        "mime_type": frame.get("mime_type", "image/jpeg")
+                    })
 
             multimodal_contents.append(user_text)
             gemini_res = run_llm_multimodal(system_prompt, multimodal_contents, api_key=user_api_key)
