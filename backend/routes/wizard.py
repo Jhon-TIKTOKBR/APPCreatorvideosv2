@@ -48,51 +48,78 @@ def safe_b64decode(data_uri: str) -> bytes:
         return b""
 
 
+def _clean_script_text(text: str) -> str:
+    """
+    Remove qualquer menção a valores monetários/preços (R$, reais, números de preço)
+    e elimina repetições consecutivas de palavras ou termos duplicados.
+    """
+    if not text:
+        return ""
+    t = text.strip()
+
+    # 1. Remove menções a preços/valores numéricos (ex: "R$ 49,90", "300 reais", "por 59 reais")
+    t = re.sub(r"que\s+custam?\s+(?:mais\s+de\s+)?(?:R\$\s*)?\d+(?:[.,]\d+)?(?:\s*reais)?", "caríssimas de vitrine", t, flags=re.IGNORECASE)
+    t = re.sub(r"de\s+(?:R\$\s*)?\d+(?:[.,]\d+)?(?:\s*reais)?\s+de\s+(?:shopping|boutique|loja)", "caríssima de boutique", t, flags=re.IGNORECASE)
+    t = re.sub(r"(?:por\s+apenas|por\s+só|paguei\s+só|paguei\s+apenas|saindo\s+por|custa(?:ndo)?)\s*(?:R\$\s*)?\d+(?:[.,]\d+)?(?:\s*reais)?", "num valor inacreditável", t, flags=re.IGNORECASE)
+    t = re.sub(r"R\$\s*\d+(?:[.,]\d+)?(?:\s*reais)?", "um valor surreal", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b\d+(?:[.,]\d+)?\s*reais\b", "preço de banana", t, flags=re.IGNORECASE)
+
+    # 2. Remove palavras repetidas em sequência (ex: "muito muito", "linda linda", "esse esse")
+    t = re.sub(r"\b([a-zA-Zá-úÁ-Ú]+)(?:[\s,]+\1\b)+", r"\1", t, flags=re.IGNORECASE)
+    # Remove pares de palavras repetidos em sequência (ex: "no corpo no corpo", "de verdade de verdade")
+    t = re.sub(r"\b([a-zA-Zá-úÁ-Ú]+\s+[a-zA-Zá-úÁ-Ú]+)(?:[\s,]+\1\b)+", r"\1", t, flags=re.IGNORECASE)
+
+    # Normaliza espaços múltiplos
+    t = re.sub(r"\s{2,}", " ", t).strip()
+    return t
+
+
 def balance_script_scenes(scripts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Garante matematicamente que o roteiro da Cena 2 tenha a mesma quantidade de palavras
-    da Cena 1 (divisão equilibrada 50/50 do áudio total respeitando pontuação natural).
+    Limpa preços/repetições e garante matematicamente que o roteiro da Cena 2 tenha
+    a mesma quantidade de palavras da Cena 1 (divisão 50/50 sem duplicar frases).
     """
     if not scripts:
         return scripts
 
     for sc in scripts:
-        s1 = (sc.get("scene_1_text") or "").strip()
-        s2 = (sc.get("scene_2_text") or "").strip()
-        full = (sc.get("full_audio") or f"{s1} {s2}").strip()
-        if not full:
-            continue
+        s1 = _clean_script_text(sc.get("scene_1_text") or "")
+        s2 = _clean_script_text(sc.get("scene_2_text") or "")
 
-        words = full.split()
-        total_w = len(words)
-        if total_w < 6:
-            continue
+        # Se o início da Cena 2 repetir o final da Cena 1, remove a sobreposição
+        w1_list = s1.split()
+        w2_list = s2.split()
+        for overlap_len in range(min(8, len(w1_list), len(w2_list)), 0, -1):
+            tail = [w.lower().strip(".,!?;:") for w in w1_list[-overlap_len:]]
+            head = [w.lower().strip(".,!?;:") for w in w2_list[:overlap_len]]
+            if tail == head:
+                w2_list = w2_list[overlap_len:]
+                break
 
-        w1_count = len(s1.split())
-        w2_count = len(s2.split())
+        # Monta o texto único a partir de s1 + s2 (sem depender de full_audio que pode vir duplicado da IA)
+        combined_words = w1_list + w2_list
+        if not combined_words:
+            full_fallback = _clean_script_text(sc.get("full_audio") or "")
+            combined_words = full_fallback.split()
 
-        # Se a diferença for maior que 2 palavras, divide exatamente no meio (50% / 50%)
-        if abs(w1_count - w2_count) > 2:
+        # Remove palavras consecutivas idênticas na junção entre Cena 1 e Cena 2
+        dedup_words: List[str] = []
+        for w in combined_words:
+            if dedup_words and w.lower().strip(".,!?;:") == dedup_words[-1].lower().strip(".,!?;:"):
+                continue
+            dedup_words.append(w)
+
+        total_w = len(dedup_words)
+        if total_w >= 6:
             mid = total_w // 2
-            # Procura pontuação próxima ao meio (janela de ±3 palavras) para corte natural da frase
-            best_split = mid
-            best_dist = 999
-            for idx in range(max(2, mid - 3), min(total_w - 2, mid + 4)):
-                token = words[idx - 1]
-                if any(token.endswith(p) for p in [".", "!", "?", ",", ";", ":"]):
-                    dist = abs(idx - mid)
-                    if dist < best_dist:
-                        best_dist = dist
-                        best_split = idx
-
-            new_s1 = " ".join(words[:best_split]).strip()
-            new_s2 = " ".join(words[best_split:]).strip()
+            new_s1 = " ".join(dedup_words[:mid]).strip()
+            new_s2 = " ".join(dedup_words[mid:]).strip()
             sc["scene_1_text"] = new_s1
             sc["scene_2_text"] = new_s2
             sc["full_audio"] = f"{new_s1} {new_s2}".strip()
 
-        sc["scene_1_word_count"] = len(sc["scene_1_text"].split())
-        sc["scene_2_word_count"] = len(sc["scene_2_text"].split())
+        sc["scene_1_word_count"] = len((sc.get("scene_1_text") or "").split())
+        sc["scene_2_word_count"] = len((sc.get("scene_2_text") or "").split())
 
     return scripts
 
