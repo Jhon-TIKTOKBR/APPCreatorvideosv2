@@ -82,8 +82,13 @@
         </div>
       </div>
 
-      <!-- Status do Agente & Botão Novo -->
-      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+      <!-- Status do Agente, Histórico & Botão Novo -->
+      <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+        <button onclick="openHistoryModal()" class="text-xs font-semibold text-indigo-300 bg-indigo-500/15 border border-indigo-500/40 hover:bg-indigo-500/25 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition">
+          <i data-lucide="folder-heart" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span class="hidden sm:inline">Meus Criativos</span>
+          <span id="history-count-badge" class="px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-[10px] font-bold text-white">0</span>
+        </button>
         <button onclick="openAgentKeyModal()" id="btn-agent-key" class="text-xs font-bold text-amber-300 bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg transition">
           <span id="agent-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
           <i data-lucide="bot" class="w-3.5 h-3.5"></i>
@@ -737,7 +742,34 @@
           <div id="angle-image-status-text" class="leading-relaxed"></div>
         </div>
 
-        <!-- Grid dos 4 Ângulos da Modelo (Frente, Close-up Bolso/Costura, Costas, Perfil Lateral) -->
+        <!-- Gerador de Variações de Cores da Mesma Roupa (Item 2: Para gancho 'Comprei logo 3 cores') -->
+        <div class="p-3.5 rounded-xl bg-pink-500/10 border border-pink-500/30 space-y-2.5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <label class="text-xs font-bold text-white flex items-center gap-1.5">
+              <i data-lucide="palette" class="w-4 h-4 text-pink-400"></i>
+              🎨 Variações de Cores da Mesma Roupa (Para cortes "Comprei logo 3 cores")
+            </label>
+            <span class="text-[10px] text-pink-300 font-semibold">Mesma modelo + celular fixo mudando só a cor</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input 
+              type="text" 
+              id="color-variations-input" 
+              placeholder="Digite as cores separadas por vírgula (ex: Preto, Vinho, Bege, Verde Militar)..." 
+              value="Preto, Vinho, Bege"
+              class="flex-1 bg-[#0b0f19] border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-pink-500"
+            >
+            <button 
+              type="button"
+              onclick="handleGenerateColorVariations()"
+              class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-md flex-shrink-0"
+            >
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Adicionar Cards das Cores
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid dos 4 Ângulos da Modelo + Cores (Frente, Close-up Bolso/Costura, Costas, Perfil Lateral e Cores) -->
         <div id="model-angles-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Renderizado dinamicamente via JS -->
         </div>
@@ -782,39 +814,100 @@
         <textarea id="flow-scene-2" readonly class="w-full h-28 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-mono resize-none focus:outline-none focus:border-pink-500"></textarea>
       </div>
 
-      <!-- 4. Áudio PT-BR Completo para Locução -->
-      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+      <!-- 4. Áudio PT-BR Completo para Locução + Gerador de Voz Integrado (Item 1) -->
+      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-emerald-500/40 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wide">4. Áudio da Locução (PT-BR)</span>
-            <span class="text-xs text-gray-400">Cadência rápida estilo TikTok Shop (Voz no CapCut / ElevenLabs)</span>
+            <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-xs uppercase tracking-wide">4. Estúdio de Voz & Locução (PT-BR)</span>
+            <span class="text-xs text-gray-300">Gere e baixe o áudio .WAV direto no app ou copie para o CapCut</span>
           </div>
           <button onclick="copyToClipboard('flow-audio', this)" class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg bg-gray-800 hover:bg-emerald-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-1.5 transition">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Áudio
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Texto do Áudio
           </button>
         </div>
-        <textarea id="flow-audio" readonly class="w-full h-24 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-sans resize-none focus:outline-none focus:border-emerald-500"></textarea>
 
-        <!-- Card de Recomendação de Voz para Alta Conversão -->
-        <div class="mt-4 p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 to-teal-950/30 border border-emerald-800/40 space-y-2 text-xs">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-            <span class="font-bold text-emerald-300 flex items-center gap-1.5 text-sm">
-              <i data-lucide="mic" class="w-4 h-4 text-emerald-400"></i> Qual voz usar no vídeo? (Opções Gratuitas & Clonagem)
+        <textarea id="flow-audio" class="w-full h-24 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-sans resize-none focus:outline-none focus:border-emerald-500"></textarea>
+
+        <!-- Gerador de Voz Direto no App (Gemini TTS Nativo) -->
+        <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-950/50 via-[#101626] to-[#101626] border border-emerald-500/30 space-y-3.5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-xs sm:text-sm font-bold text-white">Gerar e Baixar Voz Feminina em Português (Direto no App)</h4>
+                <p class="text-[11px] text-gray-400">Usa o motor Gemini TTS da sua chave para narrar o roteiro acima com sotaque brasileiro</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 self-start sm:self-auto">
+              100% Grátis na sua Chave
             </span>
-            <span class="self-start sm:self-auto px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">Padrão Ouro TikTok Shop</span>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-300 pt-1">
-            <div class="p-3 rounded-lg bg-black/40 border border-emerald-900/40">
-              <span class="font-semibold text-white block mb-1">1. Opção 100% Grátis: CapCut (Jéssica / Moça Fofa)</span>
-              <p class="text-[11px] text-gray-400 leading-relaxed">No CapCut (celular ou PC), cole o texto acima em <em>Texto para Fala</em> e selecione a voz <strong>Jéssica</strong> ou <strong>Moça Fofa</strong> com velocidade em <strong>1.15x a 1.20x</strong>. É o padrão dos vídeos de provador que mais vendem no Brasil.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-300 mb-1">Timbre da Voz Feminina:</label>
+              <select id="tts-voice-select" class="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                <option value="Aoede">Aoede (Jovem & Empolgada - Provador)</option>
+                <option value="Kore">Kore (Confiante & Persuasiva)</option>
+                <option value="Leda">Leda (Doce & Amiga Sincera)</option>
+                <option value="Zephyr">Zephyr (Dinâmica & Vibrante)</option>
+              </select>
             </div>
-            <div class="p-3 rounded-lg bg-black/40 border border-emerald-900/40">
-              <span class="font-semibold text-white block mb-1">2. Clonagem Gratuita: Fish Audio ou ElevenLabs</span>
-              <p class="text-[11px] text-gray-400 leading-relaxed">Para clonar uma voz real, acesse <strong>fish.audio</strong> (créditos gratuitos) ou o plano free do <strong>ElevenLabs</strong> (10.000 caracteres/mês). Basta subir um áudio de 20s para clonar e gerar a fala.</p>
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-300 mb-1">Estilo de Entonação:</label>
+              <select id="tts-tone-select" class="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                <option value="animada">Super Empolgada (Provador Viral)</option>
+                <option value="amiga">Amiga Contando Achadinho Barato</option>
+                <option value="urgente">Urgência de Oferta Relâmpago</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-gray-300 mb-1">Velocidade (Ritmo TikTok):</label>
+              <select id="tts-speed-select" onchange="updateTTSPlaybackSpeed()" class="w-full bg-[#0b0f19] border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                <option value="1.15" selected>1.15x (Padrão Ouro TikTok Shop)</option>
+                <option value="1.20">1.20x (Rápido & Dinâmico)</option>
+                <option value="1.25">1.25x (Time-Lapse Ultra Rápido)</option>
+                <option value="1.0">1.0x (Velocidade Original)</option>
+              </select>
             </div>
           </div>
-          <p class="text-[11px] text-emerald-400/90 italic pt-1">
-            * Dica estratégica: O Google Flow gera o visual com perfeição de movimentos. Gerar a voz em separado no CapCut garante sincronia perfeita, sotaque 100% brasileiro e naturalidade que converte em vendas.
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+            <button 
+              type="button"
+              id="btn-generate-tts"
+              onclick="handleGenerateTTSAudio()"
+              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20"
+            >
+              <i data-lucide="mic" class="w-4 h-4"></i>
+              <span>Gerar Locução em Português Agora</span>
+            </button>
+
+            <!-- Player e Download do Áudio Gerado -->
+            <div id="tts-Result-box" class="hidden flex-1 flex flex-col sm:flex-row items-center gap-2.5 bg-black/50 p-2 rounded-xl border border-emerald-500/30">
+              <audio id="tts-audio-player" controls class="h-9 flex-1 w-full"></audio>
+              <button 
+                type="button"
+                onclick="downloadTTSAudio()"
+                class="w-full sm:w-auto px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition flex-shrink-0 shadow"
+              >
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar .WAV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card de Recomendação de Voz Alternativa -->
+        <div class="p-3.5 sm:p-4 rounded-xl bg-black/30 border border-gray-800/80 space-y-2 text-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <span class="font-bold text-gray-300 flex items-center gap-1.5 text-xs">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-emerald-400"></i> Alternativas externas (CapCut / ElevenLabs):
+            </span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">
+            Se preferir usar a voz <strong>Jéssica</strong> do CapCut ou clonar uma voz no <strong>Fish Audio / ElevenLabs</strong>, basta clicar em <em>Copiar Texto do Áudio</em> acima e colar lá na velocidade <strong>1.15x a 1.20x</strong>.
           </p>
         </div>
       </div>
@@ -904,6 +997,39 @@
         <button type="button" id="btn-save-key" onclick="saveAndVerifyAgentKey()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-pink-500/25">
           <i data-lucide="check-circle-2" class="w-4 h-4"></i>
           <span>Testar & Ativar Agente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Biblioteca / Histórico de Produtos Campeões (Item 5) -->
+  <div id="history-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col p-6 border border-indigo-500/40 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3.5 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+            <i data-lucide="folder-heart" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Biblioteca de Produtos Campeões (Meus Criativos Salvos)</h3>
+            <p class="text-xs text-gray-400">Reabra qualquer produto anterior com seus roteiros, Raio-X e prompts do Flow em 1 clique</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeHistoryModal()" class="text-gray-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="history-list-container" class="flex-1 overflow-y-auto space-y-3 pr-1">
+        <!-- Renderizado via JS -->
+      </div>
+
+      <div class="flex items-center justify-between pt-4 mt-4 border-t border-gray-800">
+        <button type="button" onclick="clearLocalHistory()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">
+          Limpar Histórico Local
+        </button>
+        <button type="button" onclick="closeHistoryModal()" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white">
+          Fechar
         </button>
       </div>
     </div>
@@ -1342,6 +1468,7 @@
     // Inicialização
     document.addEventListener('DOMContentLoaded', async () => {
       lucide.createIcons();
+      updateHistoryBadge();
       await checkServerAgentStatus();
       await loadEnvironments();
     });
@@ -1630,14 +1757,14 @@
       if (b4) b4.textContent = name;
     }
 
-    // Renderizar os 3 Roteiros
+    // Renderizar os 3 Roteiros com Edição Manual Ao Vivo (Item 4)
     function renderScripts() {
       const container = document.getElementById('scripts-container');
       if (!container) return;
 
       container.innerHTML = generatedScripts.map(script => {
-        const w1 = script.scene_1_word_count || (script.scene_1_text ? script.scene_1_text.trim().split(/\s+/).length : 0);
-        const w2 = script.scene_2_word_count || (script.scene_2_text ? script.scene_2_text.trim().split(/\s+/).length : 0);
+        const w1 = script.scene_1_text ? script.scene_1_text.trim().split(/\s+/).filter(Boolean).length : 0;
+        const w2 = script.scene_2_text ? script.scene_2_text.trim().split(/\s+/).filter(Boolean).length : 0;
         return `
           <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800 flex flex-col justify-between glass-card-hover transition-all">
             <div class="space-y-3.5 sm:space-y-4">
@@ -1645,7 +1772,14 @@
                 <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-pink-500/20 text-pink-300">
                   Opção ${script.id}
                 </span>
-                <span class="text-[11px] text-emerald-400 font-semibold">9:16 • Celular Fixo • Sem Texto na Tela</span>
+                <button 
+                  type="button"
+                  onclick="balanceManualScript(${script.id})"
+                  class="text-[11px] bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md font-semibold transition"
+                  title="Iguala automaticamente a quantidade de palavras da Cena 1 e Cena 2"
+                >
+                  ⚖️ Equilibrar 50/50
+                </button>
               </div>
 
               <div>
@@ -1653,31 +1787,41 @@
                 <p class="text-xs text-pink-400 mt-0.5">${script.target_emotion}</p>
               </div>
 
-              <!-- Cena 1 -->
-              <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
+              <!-- Cena 1 (Editável) -->
+              <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1.5">
                 <div class="flex items-center justify-between">
                   <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                    <i data-lucide="play" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Gancho & Detalhes
+                    <i data-lucide="edit-3" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Editável
                   </span>
-                  <span class="px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300 text-[10px] font-bold">${w1} palavras</span>
+                  <span id="wc-s1-${script.id}" class="px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300 text-[10px] font-bold">${w1} palavras</span>
                 </div>
-                <p class="text-xs text-gray-200 leading-relaxed">${script.scene_1_text}</p>
+                <textarea 
+                  id="edit-s1-${script.id}"
+                  rows="3"
+                  oninput="handleManualSceneEdit(${script.id})"
+                  class="w-full bg-[#0b0f19]/90 border border-gray-800 focus:border-pink-500 rounded-lg p-2 text-xs text-gray-100 leading-relaxed resize-none focus:outline-none"
+                >${script.scene_1_text}</textarea>
               </div>
 
-              <!-- Cena 2 -->
-              <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
+              <!-- Cena 2 (Editável) -->
+              <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1.5">
                 <div class="flex items-center justify-between">
                   <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                    <i data-lucide="play" class="w-3 h-3 text-purple-400"></i> Cena 2 (10 a 20s) - CTA Carrinho
+                    <i data-lucide="edit-3" class="w-3 h-3 text-purple-400"></i> Cena 2 (10 a 20s) - Editável
                   </span>
-                  <span class="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 text-[10px] font-bold">${w2} palavras</span>
+                  <span id="wc-s2-${script.id}" class="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 text-[10px] font-bold">${w2} palavras</span>
                 </div>
-                <p class="text-xs text-gray-200 leading-relaxed">${script.scene_2_text}</p>
+                <textarea 
+                  id="edit-s2-${script.id}"
+                  rows="3"
+                  oninput="handleManualSceneEdit(${script.id})"
+                  class="w-full bg-[#0b0f19]/90 border border-gray-800 focus:border-purple-500 rounded-lg p-2 text-xs text-gray-100 leading-relaxed resize-none focus:outline-none"
+                >${script.scene_2_text}</textarea>
               </div>
 
               <!-- Movimentos da Modelo -->
               <div class="p-2.5 rounded-lg bg-gray-900/80 border border-gray-800/80">
-                <span class="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Movimentação da Modelo:</span>
+                <span class="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Movimentação Time-Lapse (Celular Fixo):</span>
                 <p class="text-[11px] text-gray-400 leading-tight">${script.movements_summary}</p>
               </div>
             </div>
@@ -1705,8 +1849,39 @@
       lucide.createIcons();
     }
 
+    function handleManualSceneEdit(scriptId) {
+      const sc = generatedScripts.find(s => s.id === scriptId);
+      if (!sc) return;
+      const el1 = document.getElementById(`edit-s1-${scriptId}`);
+      const el2 = document.getElementById(`edit-s2-${scriptId}`);
+      const wc1 = document.getElementById(`wc-s1-${scriptId}`);
+      const wc2 = document.getElementById(`wc-s2-${scriptId}`);
+      if (el1) sc.scene_1_text = el1.value.trim();
+      if (el2) sc.scene_2_text = el2.value.trim();
+      sc.full_audio = `${sc.scene_1_text} ${sc.scene_2_text}`.trim();
+      const count1 = sc.scene_1_text ? sc.scene_1_text.split(/\s+/).filter(Boolean).length : 0;
+      const count2 = sc.scene_2_text ? sc.scene_2_text.split(/\s+/).filter(Boolean).length : 0;
+      if (wc1) wc1.textContent = `${count1} palavras`;
+      if (wc2) wc2.textContent = `${count2} palavras`;
+    }
+
+    function balanceManualScript(scriptId) {
+      handleManualSceneEdit(scriptId);
+      const sc = generatedScripts.find(s => s.id === scriptId);
+      if (!sc) return;
+      const words = `${sc.scene_1_text} ${sc.scene_2_text}`.trim().split(/\s+/).filter(Boolean);
+      if (words.length < 4) return;
+      const mid = Math.floor(words.length / 2);
+      sc.scene_1_text = words.slice(0, mid).join(' ');
+      sc.scene_2_text = words.slice(mid).join(' ');
+      sc.full_audio = `${sc.scene_1_text} ${sc.scene_2_text}`;
+      renderScripts();
+      showToast("Cena 1 e Cena 2 equilibradas com a mesma quantidade de palavras!");
+    }
+
     // Aprovar Roteiro e ir para Passo 3
     function approveScript(scriptId) {
+      handleManualSceneEdit(scriptId);
       selectedScript = generatedScripts.find(s => s.id === scriptId);
       if (!selectedScript) return;
       showToast(`Roteiro ${scriptId} aprovado! Selecione o ambiente.`);
@@ -1763,6 +1938,7 @@
           }
           renderModelAngles(data.model_angles || []);
           applyNarrationModeToPrompts(selectedNarrationMode);
+          saveToLocalHistory(data);
           goToStep(4);
         } else {
           showToast("Erro ao gerar prompts.");
@@ -1772,6 +1948,263 @@
         console.error(err);
         showToast("Erro ao gerar prompts do Flow.");
       }
+    }
+
+    // Item 2: Gerar Variações de Cores da Mesma Roupa
+    async function handleGenerateColorVariations() {
+      const inp = document.getElementById('color-variations-input');
+      const colorsText = inp ? inp.value.trim() : '';
+      if (!colorsText) {
+        showToast("Digite as cores desejadas (ex: Preto, Vinho, Bege).");
+        return;
+      }
+
+      showLoading(true, `Criando prompts das variações de cores (${colorsText}) para sua modelo...`);
+      try {
+        const res = await fetch('/api/wizard/generate-color-variations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            colors_text: colorsText,
+            product_name: productName,
+            environment_id: selectedEnvironment,
+            agent_xray: currentAgentXray
+          })
+        });
+        const data = await res.json();
+        showLoading(false);
+
+        if (data.success && data.color_angles) {
+          // Mantém os 4 ângulos originais e adiciona os cards de cores
+          const baseAngles = (flowDataCache && flowDataCache.model_angles) ? flowDataCache.model_angles : currentModelAngles.slice(0, 4);
+          renderModelAngles([...baseAngles, ...data.color_angles]);
+          showToast(`${data.color_angles.length} variações de cores adicionadas ao Estúdio!`);
+        }
+      } catch (e) {
+        showLoading(false);
+        showToast("Erro ao gerar variações de cores.");
+      }
+    }
+
+    // Item 1: Gerar e Baixar Voz em Português Direto no App (Gemini TTS)
+    let latestTTSAudioDataUrl = null;
+
+    async function handleGenerateTTSAudio() {
+      const audioText = document.getElementById('flow-audio') ? document.getElementById('flow-audio').value.trim() : '';
+      const voiceName = document.getElementById('tts-voice-select') ? document.getElementById('tts-voice-select').value : 'Aoede';
+      const toneStyle = document.getElementById('tts-tone-select') ? document.getElementById('tts-tone-select').value : 'animada';
+      const btn = document.getElementById('btn-generate-tts');
+
+      if (!audioText) {
+        showToast("O texto da locução está vazio.");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> <span>Narrando em Português...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/wizard/generate-tts-audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: audioText,
+            voice_name: voiceName,
+            tone_style: toneStyle,
+            api_key: getStoredGeminiKey()
+          })
+        });
+        const data = await res.json();
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="mic" class="w-4 h-4"></i> <span>Gerar Locução em Português Agora</span>';
+          lucide.createIcons();
+        }
+
+        if (data.success && data.audio_data_url) {
+          latestTTSAudioDataUrl = data.audio_data_url;
+          const box = document.getElementById('tts-Result-box');
+          const player = document.getElementById('tts-audio-player');
+          if (player) {
+            player.src = data.audio_data_url;
+            updateTTSPlaybackSpeed();
+            player.play().catch(() => {});
+          }
+          if (box) box.classList.remove('hidden');
+          showToast("Locução em português gerada com sucesso!");
+        } else {
+          alert(data.message || "Erro ao gerar áudio.");
+        }
+      } catch (e) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="mic" class="w-4 h-4"></i> <span>Gerar Locução em Português Agora</span>';
+          lucide.createIcons();
+        }
+        showToast("Erro de conexão ao gerar voz.");
+      }
+    }
+
+    function updateTTSPlaybackSpeed() {
+      const player = document.getElementById('tts-audio-player');
+      const speedSel = document.getElementById('tts-speed-select');
+      if (player && speedSel) {
+        player.playbackRate = parseFloat(speedSel.value || '1.15');
+      }
+    }
+
+    function downloadTTSAudio() {
+      if (!latestTTSAudioDataUrl) return;
+      const a = document.createElement('a');
+      a.href = latestTTSAudioDataUrl;
+      const safeProd = (productName || 'TikTok_Shop').replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `Locucao_PTBR_${safeProd}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("Áudio .WAV baixado com sucesso!");
+    }
+
+    // Item 5: Biblioteca / Histórico de Produtos Campeões
+    function getLocalHistoryList() {
+      try {
+        return JSON.parse(localStorage.getItem('tiktok_studio_history_v1') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function updateHistoryBadge() {
+      const badge = document.getElementById('history-count-badge');
+      if (badge) {
+        badge.textContent = getLocalHistoryList().length;
+      }
+    }
+
+    function saveToLocalHistory(flowData) {
+      try {
+        const list = getLocalHistoryList();
+        const item = {
+          id: Date.now(),
+          created_at: new Date().toLocaleString('pt-BR'),
+          product_name: productName,
+          video_format: selectedFormat,
+          environment_id: selectedEnvironment,
+          narration_mode: selectedNarrationMode,
+          agent_xray: currentAgentXray,
+          scripts: generatedScripts,
+          selected_script: selectedScript,
+          flow_data: flowData
+        };
+        list.unshift(item);
+        localStorage.setItem('tiktok_studio_history_v1', JSON.stringify(list.slice(0, 25)));
+        updateHistoryBadge();
+      } catch (e) {}
+    }
+
+    function openHistoryModal() {
+      const modal = document.getElementById('history-modal');
+      const container = document.getElementById('history-list-container');
+      if (!modal || !container) return;
+
+      const list = getLocalHistoryList();
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400 space-y-2">
+            <i data-lucide="folder-open" class="w-10 h-10 mx-auto text-gray-600"></i>
+            <p class="text-sm font-semibold text-gray-300">Nenhum criativo salvo ainda</p>
+            <p class="text-xs">Assim que você gerar os prompts de um produto no Passo 4, ele ficará salvo automaticamente aqui!</p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = list.map((item, idx) => `
+          <div class="p-4 rounded-xl bg-black/50 border border-gray-800 hover:border-indigo-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+            <div class="space-y-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-bold text-white">${item.product_name || 'Produto'}</span>
+                <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">${item.created_at}</span>
+              </div>
+              <p class="text-xs text-gray-400 truncate">${item.selected_script ? item.selected_script.scene_1_text : (item.flow_data ? item.flow_data.audio_script : '')}</p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button 
+                type="button"
+                onclick="loadSavedCreative(${idx})"
+                class="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition"
+              >
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Abrir Criativo
+              </button>
+              <button 
+                type="button"
+                onclick="deleteHistoryItem(${idx})"
+                class="p-2 rounded-lg bg-gray-800 hover:bg-rose-600 text-gray-400 hover:text-white transition"
+                title="Excluir"
+              >
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeHistoryModal() {
+      const modal = document.getElementById('history-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function loadSavedCreative(idx) {
+      const list = getLocalHistoryList();
+      const item = list[idx];
+      if (!item) return;
+
+      productName = item.product_name || 'Produto';
+      selectedFormat = item.video_format || 'UGC-POV';
+      selectedEnvironment = item.environment_id || 'ambiente_1';
+      selectedNarrationMode = item.narration_mode || 'separate';
+      currentAgentXray = item.agent_xray || {};
+      generatedScripts = item.scripts || [];
+      selectedScript = item.selected_script || (generatedScripts[0] || null);
+      flowDataCache = item.flow_data;
+
+      updateProductBadges(productName);
+      renderAgentXray(currentAgentXray);
+      renderScripts();
+
+      if (flowDataCache) {
+        document.getElementById('flow-model-image').value = flowDataCache.model_image_prompt || '';
+        document.getElementById('flow-audio').value = flowDataCache.audio_script || '';
+        document.getElementById('flow-movements').textContent = flowDataCache.movements_direction || '';
+        renderModelAngles(flowDataCache.model_angles || []);
+        applyNarrationModeToPrompts(selectedNarrationMode);
+        closeHistoryModal();
+        goToStep(4);
+        showToast(`Criativo "${productName}" carregado com sucesso!`);
+      } else {
+        closeHistoryModal();
+        goToStep(2);
+      }
+    }
+
+    function deleteHistoryItem(idx) {
+      const list = getLocalHistoryList();
+      list.splice(idx, 1);
+      localStorage.setItem('tiktok_studio_history_v1', JSON.stringify(list));
+      updateHistoryBadge();
+      openHistoryModal();
+    }
+
+    function clearLocalHistory() {
+      localStorage.removeItem('tiktok_studio_history_v1');
+      updateHistoryBadge();
+      openHistoryModal();
+      showToast("Histórico limpo!");
     }
 
     // Estúdio Multi-Ângulos da Modelo (4 Ângulos: Frente, Close-up Bolso/Costura, Costas, Perfil)

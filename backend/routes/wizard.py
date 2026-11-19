@@ -29,7 +29,8 @@ from backend.services.ai_analyzer import (
     run_llm_json,
     run_llm_multimodal,
     has_configured_api_key,
-    generate_gemini_image
+    generate_gemini_image,
+    generate_gemini_tts_wav
 )
 
 router = APIRouter(prefix="/api/wizard", tags=["Video Creation Wizard"])
@@ -1079,3 +1080,101 @@ def generate_angle_image_endpoint(req: GenerateAngleImageRequest):
         api_key=req.api_key
     )
     return res
+
+
+class GenerateTTSRequest(BaseModel):
+    text: str
+    voice_name: str = "Aoede" # Aoede, Kore, Leda, Zephyr
+    tone_style: str = "animada" # animada, amiga, urgente
+    api_key: Optional[str] = None
+
+
+class GenerateColorVariationsRequest(BaseModel):
+    colors_text: str # Ex: "Preto, Vinho, Bege"
+    product_name: str
+    environment_id: str = "ambiente_1"
+    agent_xray: Optional[Dict[str, Any]] = None
+
+
+@router.post("/generate-tts-audio")
+def generate_tts_audio_endpoint(req: GenerateTTSRequest):
+    """
+    Item 1: Gera a locução em Português Brasileiro (PT-BR) direto pelo Gemini TTS
+    e retorna um arquivo .WAV pronto para ouvir no player e baixar.
+    """
+    return generate_gemini_tts_wav(
+        text_pt=req.text,
+        voice_name=req.voice_name,
+        tone_style=req.tone_style,
+        api_key=req.api_key
+    )
+
+
+@router.post("/generate-color-variations")
+def generate_color_variations_endpoint(req: GenerateColorVariationsRequest):
+    """
+    Item 2: Gera prompts de imagem da mesma modelo ruiva com celular 100% fixo
+    vestindo exatamente a mesma roupa em múltiplas variações de cores (para o corte 'Comprei logo 3 cores').
+    """
+    raw_colors = [c.strip() for c in re.split(r"[,;/\n]+", req.colors_text or "") if c.strip()]
+    if not raw_colors:
+        raw_colors = ["Preto", "Vinho", "Bege"]
+
+    prod = (req.product_name or "Look Feminino").strip()
+    xray = req.agent_xray or {}
+    features_list = xray.get("detected_features") or []
+    fabric_info = xray.get("fabric_and_finish") or ""
+    garment_spec = f"{prod} ({fabric_info}; {', '.join(features_list[:4])})" if (fabric_info or features_list) else prod
+
+    env_id = req.environment_id
+    if env_id == "ambiente_1":
+        env_bg_en = "Behind her in the reflection is the interior of luxury boutique fitting room stalls: solid white divider stall partitions, matte black privacy curtain, and clothes neatly hung on wooden wall racks. Ultra-glossy polished black porcelain tile floor with realistic floor reflections beneath her white sneakers. Clean diffuse boutique overhead lighting, zero harsh shadows. Solid boutique room walls behind her back, with absolutely NO mirror behind the model."
+    elif env_id == "ambiente_2":
+        env_bg_en = "Behind her in the reflection is the cozy modern bedroom interior: bed dressed with a bright sunflower patterned quilt and sunflower pillows, plush shaggy cream rug on warm wooden plank floor, bedside nightstand with a warm glowing lamp, solid room wall behind the bed with NO mirror behind the model. Warm cozy ambient bedroom lighting."
+    else:
+        env_bg_en = "Behind her in the reflection is a modern apartment entryway with sleek console table, contemporary solid accent wall, soft warm indirect ambient glow with NO mirror behind the model."
+
+    fixed_rule = "STRICT FIXED SMARTPHONE & CLEAN SCREEN RULE: The model MUST hold the white smartphone completely fixed, rigid, and stationary in the exact same position in front of her upper face/eyes with one hand. ABSOLUTELY NO text, NO captions, NO UI icons, and NO graphics on the screen."
+
+    color_angles = []
+    for idx, color_name in enumerate(raw_colors[:6], start=1):
+        c_id = f"color_{idx}"
+        prompt_en = f"""Vertical 9:16 point-of-view mirror selfie photograph (COLOR VARIATION #{idx}: {color_name.upper()}). Direct front reflection inside a clean flat full-length wall mirror of the curvy copper-ginger red-haired woman with soft natural shoulder-length waves. She is holding the white smartphone completely fixed and stationary in the exact same position covering her upper face and eyes with one hand. She is wearing {garment_spec} specifically in the color {color_name.upper()}, preserving 100% the exact same garment design, pockets, seams, fabric texture, and silhouette — ONLY the garment color changes to {color_name.upper()}. Wearing delicate gold necklace, gold watch on right wrist, thin gold bracelet on left wrist, white sneakers. {env_bg_en}. {fixed_rule}. Ultra-detailed 8K photorealism."""
+        color_angles.append({
+            "id": c_id,
+            "title": f"Cor {idx}: {color_name.title()} (Mesma Pose & Celular Fixo)",
+            "badge": f"Cor {idx}",
+            "subtitle": f"Modelo ruiva na mesma posição vestindo {prod} na cor {color_name.title()} para corte rápido",
+            "prompt_en": prompt_en
+        })
+
+    return {
+        "success": True,
+        "colors": raw_colors[:6],
+        "color_angles": color_angles
+    }
+
+
+@router.get("/history")
+def get_saved_history():
+    """
+    Item 5: Retorna os últimos criativos salvos no Supabase para a Biblioteca de Produtos Campeões.
+    """
+    from backend.database import SUPABASE_URL, SUPABASE_KEY
+    if not SUPABASE_URL or not SUPABASE_KEY or not httpx:
+        return {"success": True, "items": []}
+    try:
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}"
+        }
+        resp = httpx.get(
+            f"{SUPABASE_URL}/rest/v1/wizard_generations?select=*&order=created_at.desc&limit=20",
+            headers=headers,
+            timeout=5.0
+        )
+        if resp.status_code == 200:
+            return {"success": True, "items": resp.json()}
+    except Exception:
+        pass
+    return {"success": True, "items": []}

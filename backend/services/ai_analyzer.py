@@ -276,6 +276,136 @@ def generate_gemini_image(
     }
 
 
+def _pcm_to_wav_bytes(pcm_bytes: bytes, sample_rate: int = 24000, num_channels: int = 1, bits_per_sample: int = 16) -> bytes:
+    """Converte áudio PCM L16 bruto do Gemini TTS para um arquivo .WAV padrão universal."""
+    import struct
+    byte_rate = sample_rate * num_channels * (bits_per_sample // 8)
+    block_align = num_channels * (bits_per_sample // 8)
+    data_size = len(pcm_bytes)
+    header = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF",
+        36 + data_size,
+        b"WAVE",
+        b"fmt ",
+        16,
+        1, # PCM
+        num_channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        bits_per_sample,
+        b"data",
+        data_size
+    )
+    return header + pcm_bytes
+
+
+def generate_gemini_tts_wav(
+    text_pt: str,
+    voice_name: str = "Aoede",
+    tone_style: str = "animada",
+    api_key: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Gera a locução em Português Brasileiro (PT-BR) usando os modelos nativos de voz do Gemini
+    (gemini-2.5-flash-preview-tts / gemini-3.8-flash-tts / gemini-3.1-flash-tts-preview)
+    e retorna um arquivo .WAV pronto para ouvir no player e baixar.
+    """
+    effective_key = get_effective_api_key(api_key)
+    if not effective_key:
+        return {
+            "success": False,
+            "error": "API_KEY_REQUIRED",
+            "message": "Conecte sua Chave Gemini no topo para gerar a voz."
+        }
+
+    clean_text = (text_pt or "").strip()
+    if not clean_text:
+        return {
+            "success": False,
+            "message": "O texto do roteiro está vazio."
+        }
+
+    style_directions = {
+        "animada": "Leia este texto em português brasileiro com sotaque nativo do Brasil, tom feminino jovem, super empolgada, rápida e persuasiva estilo criadora de provador do TikTok Shop",
+        "amiga": "Leia este texto em português brasileiro natural, como uma amiga sincera contando um achadinho imperdível e barato com entusiasmo",
+        "urgente": "Leia este texto em português brasileiro com ritmo rápido, dinâmico e tom de oferta relâmpago imperdível"
+    }
+    prefix = style_directions.get(tone_style, style_directions["animada"])
+    tts_prompt = f"{prefix}: \"{clean_text}\""
+
+    tts_models = [
+        "gemini-2.5-flash-preview-tts",
+        "gemini-3.8-flash-tts",
+        "gemini-3.8-flash-lite-tts",
+        "gemini-3.1-flash-tts-preview"
+    ]
+
+    last_err = ""
+    for model_name in tts_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={effective_key}"
+        payload = {
+            "contents": [{"parts": [{"text": tts_prompt}]}],
+            "generationConfig": {
+                "responseModalities": ["AUDIO"],
+                "speechConfig": {
+                    "voiceConfig": {
+                        "prebuiltVoiceConfig": {
+                            "voiceName": voice_name or "Aoede"
+                        }
+                    }
+                }
+            }
+        }
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                resp_data = json.loads(resp.read().decode("utf-8"))
+                candidates = resp_data.get("candidates") or []
+                for cand in candidates:
+                    c_parts = cand.get("content", {}).get("parts", [])
+                    for cp in c_parts:
+                        inline = cp.get("inlineData") or cp.get("inline_data")
+                        if inline and inline.get("data"):
+                            raw_audio_bytes = base64.b64decode(inline["data"])
+                            mime = (inline.get("mimeType") or inline.get("mime_type") or "").lower()
+                            # Se for PCM bruto (audio/L16;codec=pcm;rate=24000), empacota com cabeçalho WAV
+                            if "pcm" in mime or "l16" in mime or not raw_audio_bytes.startswith(b"RIFF"):
+                                rate = 24000
+                                m_rate = re.search(r"rate=(\d+)", mime)
+                                if m_rate:
+                                    rate = int(m_rate.group(1))
+                                wav_bytes = _pcm_to_wav_bytes(raw_audio_bytes, sample_rate=rate)
+                            else:
+                                wav_bytes = raw_audio_bytes
+
+                            wav_b64 = base64.b64encode(wav_bytes).decode("ascii")
+                            return {
+                                "success": True,
+                                "audio_data_url": f"data:audio/wav;base64,{wav_b64}",
+                                "voice_used": voice_name,
+                                "model_used": model_name
+                            }
+        except urllib.error.HTTPError as he:
+            last_err = he.read().decode("utf-8", errors="ignore")
+            logger.error(f"HTTP {he.code} no Gemini TTS ({model_name}): {last_err[:200]}")
+            continue
+        except Exception as e:
+            last_err = str(e)
+            logger.error(f"Erro no Gemini TTS ({model_name}): {e}")
+            continue
+
+    return {
+        "success": False,
+        "message": f"Não foi possível gerar o áudio neste momento ({last_err[:120]})."
+    }
+
+
 def analyze_video_content(
     caption: str,
     transcript: str,
