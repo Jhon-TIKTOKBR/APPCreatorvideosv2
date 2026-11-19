@@ -1636,6 +1636,8 @@
       if (!container) return;
 
       container.innerHTML = generatedScripts.map(script => {
+        const w1 = script.scene_1_word_count || (script.scene_1_text ? script.scene_1_text.trim().split(/\s+/).length : 0);
+        const w2 = script.scene_2_word_count || (script.scene_2_text ? script.scene_2_text.trim().split(/\s+/).length : 0);
         return `
           <div class="glass-card rounded-2xl p-4 sm:p-6 border border-gray-800 flex flex-col justify-between glass-card-hover transition-all">
             <div class="space-y-3.5 sm:space-y-4">
@@ -1643,7 +1645,7 @@
                 <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-pink-500/20 text-pink-300">
                   Opção ${script.id}
                 </span>
-                <span class="text-[11px] text-gray-400 font-medium">9:16 Vertical</span>
+                <span class="text-[11px] text-emerald-400 font-semibold">9:16 • Celular Fixo • Sem Texto na Tela</span>
               </div>
 
               <div>
@@ -1653,17 +1655,23 @@
 
               <!-- Cena 1 -->
               <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
-                <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                  <i data-lucide="play" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Gancho & Detalhes
-                </span>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                    <i data-lucide="play" class="w-3 h-3 text-pink-500"></i> Cena 1 (0 a 10s) - Gancho & Detalhes
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300 text-[10px] font-bold">${w1} palavras</span>
+                </div>
                 <p class="text-xs text-gray-200 leading-relaxed">${script.scene_1_text}</p>
               </div>
 
               <!-- Cena 2 -->
               <div class="p-3 rounded-xl bg-black/40 border border-gray-800 space-y-1">
-                <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                  <i data-lucide="play" class="w-3 h-3 text-purple-400"></i> Cena 2 (10 a 20s) - CTA Carrinho
-                </span>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                    <i data-lucide="play" class="w-3 h-3 text-purple-400"></i> Cena 2 (10 a 20s) - CTA Carrinho
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 text-[10px] font-bold">${w2} palavras</span>
+                </div>
                 <p class="text-xs text-gray-200 leading-relaxed">${script.scene_2_text}</p>
               </div>
 
