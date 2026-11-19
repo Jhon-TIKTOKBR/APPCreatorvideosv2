@@ -28,7 +28,8 @@ from backend.services.tiktok_collector import (
 from backend.services.ai_analyzer import (
     run_llm_json,
     run_llm_multimodal,
-    has_configured_api_key
+    has_configured_api_key,
+    generate_gemini_image
 )
 
 router = APIRouter(prefix="/api/wizard", tags=["Video Creation Wizard"])
@@ -97,6 +98,37 @@ class GenerateFlowPromptRequest(BaseModel):
     narration_mode: Optional[str] = "separate" # "separate" (Outro site/CapCut) ou "embedded" (Direto no Flow)
     agent_xray: Optional[Dict[str, Any]] = None
     api_key: Optional[str] = None
+
+
+class GenerateAngleImageRequest(BaseModel):
+    angle_id: str
+    angle_title: str
+    angle_prompt: str
+    environment_id: str = "ambiente_1"
+    product_images: Optional[List[Dict[str, Any]]] = None
+    api_key: Optional[str] = None
+
+
+def _load_saved_model_reference_b64(environment_id: str = "ambiente_1") -> List[Dict[str, str]]:
+    """Carrega a foto original salva da modelo ruiva e do ambiente em Base64."""
+    refs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "03_REFERENCIAS")
+    files_to_load = ["Modelo e ambiente 1.jpeg"]
+    if environment_id == "ambiente_2":
+        files_to_load.append("Ambiente quarto.jpeg")
+    elif environment_id == "ambiente_3":
+        files_to_load.append("Modelo e ambiente 1.2.jpeg")
+
+    loaded: List[Dict[str, str]] = []
+    for fname in files_to_load:
+        fpath = os.path.join(refs_dir, fname)
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, "rb") as f:
+                    b64 = base64.b64encode(f.read()).decode("ascii")
+                    loaded.append({"data": b64, "mime_type": "image/jpeg"})
+            except Exception:
+                pass
+    return loaded
 
 
 @router.get("/agent-status")
@@ -501,13 +533,22 @@ Sua missão é agir como um verdadeiro Diretor de Criação autônomo:
    - O nome comercial exato e modelo do produto.
    - O tecido/material aparente, textura, elasticidade, acabamento de costura.
    - Todos os detalhes específicos da peça: parte da frente, parte de trás, bolsos, zíperes, botões, cós, fendas, caimento.
-2. PROIBIÇÃO DE ROTEIROS GENÉRICOS: NUNCA use textos engessados ou clichês de outros produtos. Cada frase dos 3 roteiros DEVE falar especificamente das características reais deste produto que você enxergou nos prints e na descrição.
-3. DIREÇÃO DE MOVIMENTOS RÁPIDOS E CLOSE-UP DE DETALHES: Em 'movements_summary', dirija a modelo com movimentos rápidos e dinâmicos: aproximar-se bem de perto do espelho em close-up de alta definição, usar uma das mãos para puxar suavemente o bolso, o cós ou a costura do tecido demonstrando elasticidade e acabamento reforçado, virar rapidamente para mostrar os detalhes da parte de trás e caimento 360°, sempre mantendo 100% as características exatas da roupa, e finalizar aos 9-10s apontando o dedo indicador para o carrinho do TikTok Shop.
+2. ESTILOS DE GANCHOS VIRAIS OBRIGATÓRIOS (HOOKS DE CHOQUE DE PREÇO E DOR REAL):
+   Cada um dos 3 roteiros DEVE iniciar a Cena 1 com um destes estilos de ganchos brasileiros de altíssima retenção, adaptados às características reais deste produto específico:
+   - Roteiro 1 (Choque de Preço / Compra Múltipla): Iniciar com variações naturais de "Tava tão barato que eu comprei foi logo 3...", "Nem minha mãe acreditou no preço que paguei nesse [produto]..." ou "Tá tão barato que se eu te falar o preço você não acredita...".
+   - Roteiro 2 (Dor Real & Alívio Imediato): Iniciar com variações naturais de "Eu tava cansada de roupa que aperta e marca tudo...", "Eu já não aguentava mais roupa transparente..." ou a dor específica que essa peça resolve.
+   - Roteiro 3 (Inacreditável / Comparação com Loja Cara): Iniciar com variações de "Se eu te falar quanto paguei nesse [produto] com acabamento de shopping você acha que é mentira..." ou "Tava tão barato no carrinho laranja que achei que era erro do aplicativo...".
+3. CENAS MAIS RÁPIDAS ESTILO TIME-LAPSE COM CORTES RÁPIDOS E MÚLTIPLOS ÂNGULOS:
+   Em 'movements_summary', dirija a modelo em ritmo acelerado estilo TIME-LAPSE com cortes rápidos (fast jump cuts a cada 0.8s a 1.2s) mostrando todos os ângulos do look em sequência dinâmica:
+   - Ângulo Frente + aproximação super rápida em close-up de alta definição;
+   - Uma das mãos puxando suavemente o bolso e a costura do tecido demonstrando elasticidade e acabamento reforçado;
+   - Giro rápido de perfil 45° e de costas mostrando os detalhes da parte de trás e bolso traseiro, mantendo sempre 100% as características exatas da roupa;
+   - Finalização aos 9-10s apontando o dedo indicador para o carrinho do TikTok Shop.
 
 Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 {
   "product_name": "Nome Comercial Exato do Produto",
-  "visual_details": "Descrição técnica em inglês das características exatas da peça (cor, corte, bolsos, parte de trás, tecido, costuras) para preservar 100% a fidelidade visual no gerador de vídeo",
+  "visual_details": "Descrição técnica em inglês das características exatas da peça (cor, corte, bolsos, parte de trás, tecido, costuras) para preservar 100% a fidelidade visual no gerador de imagem e vídeo",
   "agent_xray": {
     "product_identified": "Nome e modelo detalhado identificado pelo Agente",
     "fabric_and_finish": "Análise do tecido, elasticidade, gramatura e acabamento",
@@ -518,22 +559,22 @@ Responda SEMPRE em JSON rigoroso com esta estrutura exata:
       "Detalhe real 4 detectado"
     ],
     "competitor_transcript": "Texto/descrição lido dos prints ou pontos-chave extraídos da oferta",
-    "agent_strategy": "Explicação direta do Agente Diretor sobre como estruturou os ganchos e os close-ups rápidos de mão mostrando os detalhes da peça"
+    "agent_strategy": "Explicação direta do Agente Diretor sobre os ganchos de choque de preço/dor e o ritmo time-lapse multi-ângulos criado para esta peça"
   },
   "scripts": [
     {
       "id": 1,
-      "angle_title": "Título do Ângulo 1 (Focado no Desejo e Detalhes Reais da Peça)",
-      "target_emotion": "Emoção alvo",
-      "scene_1_text": "Fala natural em PT-BR para Cena 1 (0-10s) citando os detalhes reais vistos nas fotos",
-      "scene_2_text": "Fala natural em PT-BR para Cena 2 (10-20s) quebrando objeção real da peça + CTA urgente para o carrinho laranja",
+      "angle_title": "Choque de Preço ('Tava tão barato que comprei logo 3 / Nem minha mãe acreditou')",
+      "target_emotion": "Euforia de achado imperdível",
+      "scene_1_text": "Fala natural em PT-BR para Cena 1 (0-10s) começando com o gancho de choque de preço e citando os detalhes reais vistos nas fotos",
+      "scene_2_text": "Fala natural em PT-BR para Cena 2 (10-20s) destacando bolso/costura/caimento + CTA urgente para o carrinho laranja",
       "full_audio": "Junção fluida de scene_1_text + scene_2_text",
-      "movements_summary": "Direção detalhada de movimentos rápidos: close-up aproximando no espelho, uma das mãos puxando suavemente o bolso e a costura mostrando elasticidade, giro mostrando parte de trás e dedo apontando para o carrinho aos 9-10s"
+      "movements_summary": "Estilo Time-Lapse com cortes rápidos (0.8s-1.2s) mostrando vários ângulos: frente, aproximação rápida em close-up com uma das mãos puxando suavemente o bolso e a costura mostrando elasticidade, giro rápido mostrando perfil e detalhes da parte de trás mantendo características exatas da roupa, e dedo apontando para o carrinho aos 9-10s"
     },
     {
       "id": 2,
-      "angle_title": "Título do Ângulo 2 (Quebra de Objeção & Close-up de Acabamento/Costura)",
-      "target_emotion": "Surpresa com a qualidade real",
+      "angle_title": "Fim da Frustração ('Eu tava cansada de roupa que aperta / transparente')",
+      "target_emotion": "Alívio e identificação imediata",
       "scene_1_text": "...",
       "scene_2_text": "...",
       "full_audio": "...",
@@ -541,7 +582,7 @@ Responda SEMPRE em JSON rigoroso com esta estrutura exata:
     },
     {
       "id": 3,
-      "angle_title": "Título do Ângulo 3 (Caimento Frente/Costas & Custo-Benefício)",
+      "angle_title": "Qualidade de Boutique ('Tá tão barato que se eu falar o preço você não acredita')",
       "target_emotion": "Certeza de compra inteligente",
       "scene_1_text": "...",
       "scene_2_text": "...",
@@ -624,8 +665,13 @@ Sua missão:
 1. TRANSCRIÇÃO REAL E ANÁLISE VISUAL: Ouça o áudio/vídeo anexado e inspecione os frames capturados do vídeo do concorrente.
    - Transcreva palavra por palavra o que é dito no vídeo em 'competitor_transcript' (se o vídeo tiver apenas música/texto na tela, transcreva os textos visíveis nos frames e descreva a ação exata da cena).
    - Identifique o produto exato, tecido, detalhes de frente/costas, bolsos, costura e caimento mostrados no vídeo.
-2. MODELAGEM DE ALTA CONVERSÃO: Crie 3 roteiros 100% inéditos e exclusivos modelados na estrutura vencedora desse vídeo, mas superando o concorrente em persuasão e ritmo.
-3. MOVIMENTOS RÁPIDOS E CLOSE-UP: Em 'movements_summary', inclua movimentos rápidos aproximando-se da câmera/espelho para mostrar bem de perto os detalhes, usando uma das mãos em close-up para puxar suavemente o bolso e a costura do tecido demonstrando elasticidade e acabamento reforçado, mostrando parte de trás e frente mantendo as características exatas da roupa, e apontando para o carrinho aos 9-10s.
+2. ESTILOS DE GANCHOS VIRAIS OBRIGATÓRIOS (HOOKS DE CHOQUE DE PREÇO E DOR REAL):
+   Crie 3 roteiros 100% inéditos modelados no produto do vídeo, onde cada roteiro inicia a Cena 1 com um destes estilos de ganchos brasileiros de altíssima conversão:
+   - Roteiro 1 (Choque de Preço / Compra Múltipla): Iniciar com variações naturais de "Tava tão barato que eu comprei foi logo 3...", "Nem minha mãe acreditou no preço que paguei nesse [produto]..." ou "Tá tão barato que se eu te falar o preço você não acredita...".
+   - Roteiro 2 (Dor Real & Alívio Imediato): Iniciar com variações naturais de "Eu tava cansada de roupa que aperta e marca tudo...", "Eu já não aguentava mais roupa transparente..." ou a dor real que a peça resolve.
+   - Roteiro 3 (Inacreditável / Comparação com Loja Cara): Iniciar com variações de "Se eu te falar quanto paguei nesse [produto] com acabamento de shopping você acha que é mentira...".
+3. CENAS MAIS RÁPIDAS ESTILO TIME-LAPSE COM CORTES RÁPIDOS E MÚLTIPLOS ÂNGULOS:
+   Em 'movements_summary', inclua movimentação super rápida e dinâmica estilo TIME-LAPSE com cortes rápidos (fast jump cuts a cada 0.8s–1.2s) mostrando todos os ângulos do look: frente, aproximação rápida em close-up com uma das mãos puxando suavemente o bolso e a costura do tecido demonstrando elasticidade e acabamento reforçado, giro rápido de perfil e costas mostrando os detalhes da parte de trás mantendo sempre as características exatas da roupa, e apontando para o carrinho aos 9-10s.
 
 Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 {
@@ -641,22 +687,22 @@ Responda SEMPRE em JSON rigoroso com esta estrutura exata:
       "Movimento-chave 4 observado"
     ],
     "competitor_transcript": "Transcrição completa do áudio falado no vídeo e/ou textos na tela",
-    "agent_strategy": "Análise do Agente Diretor: o que o concorrente fez no vídeo e como melhoramos os 3 novos roteiros"
+    "agent_strategy": "Análise do Agente Diretor: o que o concorrente fez no vídeo e como aplicamos os ganchos de choque de preço e ritmo time-lapse multi-ângulos"
   },
   "scripts": [
     {
       "id": 1,
-      "angle_title": "Título do Ângulo 1 (Modelado do Concorrente + Gancho Mais Forte)",
-      "target_emotion": "Emoção alvo",
-      "scene_1_text": "Fala em PT-BR Cena 1 (0-10s)",
+      "angle_title": "Choque de Preço ('Tava tão barato que comprei logo 3 / Nem minha mãe acreditou')",
+      "target_emotion": "Euforia de achado imperdível",
+      "scene_1_text": "Fala em PT-BR Cena 1 (0-10s) iniciando com gancho de choque de preço",
       "scene_2_text": "Fala em PT-BR Cena 2 (10-20s) + CTA para o carrinho",
       "full_audio": "Áudio completo unido",
-      "movements_summary": "Direção de movimentos rápidos com close-up puxando bolso/costura com uma das mãos, mostrando costas e apontando para o carrinho"
+      "movements_summary": "Estilo Time-Lapse com cortes rápidos (0.8s-1.2s) mostrando vários ângulos do look: frente, close-up rápido puxando bolso e costura com uma das mãos mostrando elasticidade, giro rápido mostrando perfil e costas mantendo características exatas da roupa, e dedo apontando para o carrinho aos 9-10s"
     },
     {
       "id": 2,
-      "angle_title": "Título do Ângulo 2 (Foco em Detalhes, Bolso, Costura e Elasticidade)",
-      "target_emotion": "Surpresa e confiança",
+      "angle_title": "Fim da Frustração ('Eu tava cansada de roupa que aperta / transparente')",
+      "target_emotion": "Alívio e confiança",
       "scene_1_text": "...",
       "scene_2_text": "...",
       "full_audio": "...",
@@ -664,7 +710,7 @@ Responda SEMPRE em JSON rigoroso com esta estrutura exata:
     },
     {
       "id": 3,
-      "angle_title": "Título do Ângulo 3 (Quebra de Objeção & Oferta Irresistível)",
+      "angle_title": "Qualidade de Boutique ('Tá tão barato que se eu te falar o preço você não acredita')",
       "target_emotion": "Urgência de compra",
       "scene_1_text": "...",
       "scene_2_text": "...",
@@ -845,8 +891,46 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
         env_title = "Ambiente 3: Hall de Entrada com Espelho Orgânico LED"
         env_bg_en = "Behind her in the reflection is a modern apartment entryway with sleek console table, contemporary solid accent wall, soft warm indirect ambient glow with NO mirror behind the model."
 
-    # Prompt 1: Imagem da Modelo no Ambiente Selecionado Vestindo o Produto (Keyframe Base)
-    model_image_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph. The entire image frame is the direct front reflection inside a clean flat full-length wall mirror. We see the direct front reflection of a curvy copper-ginger red-haired woman with soft natural shoulder-length waves. She is looking directly forward into the mirror, holding a white smartphone with both hands at chest level, pointing its rear camera at the mirror glass so the white phone body directly covers and occludes her upper face and eyes. She is wearing {garment_spec}, delicate thin gold chain necklace with small pendant, classic gold link watch on right wrist, thin gold bracelet on left wrist, clean white sneakers. {env_bg_en}. Strict composition rule: The camera view is the mirror reflection itself; the model is facing forward into the mirror; behind her back is the solid room interior only, absolutely NO secondary mirror behind her, NO dual mirrors, NO reflection of her back. Ultra-detailed 8K photorealism, high-end commercial fashion lookbook, pristine fabric texture and exact garment characteristics of {garment_spec}, authentic floor reflections, clean diffuse lighting matching reference photo without harsh shadows."""
+    # Prompt 1: Imagem da Modelo no Ambiente Selecionado Vestindo o Produto (Ângulo 1: Frente Corpo Inteiro)
+    model_image_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph (FRONT FULL-BODY ANGLE). The entire image frame is the direct front reflection inside a clean flat full-length wall mirror. We see the direct front reflection of a curvy copper-ginger red-haired woman with soft natural shoulder-length waves. She is looking directly forward into the mirror, holding a white smartphone with one hand at face level so the white phone body directly covers and occludes her upper face and eyes. She is wearing {garment_spec}, delicate thin gold chain necklace with small pendant, classic gold link watch on right wrist, thin gold bracelet on left wrist, clean white sneakers. {env_bg_en}. Strict composition rule: The camera view is the mirror reflection itself; behind her back is the solid room interior only, absolutely NO secondary mirror behind her. Ultra-detailed 8K photorealism, high-end commercial fashion lookbook, pristine fabric texture and exact garment characteristics of {garment_spec}, authentic floor reflections, clean diffuse lighting matching reference photo."""
+
+    # 4 Ângulos da Modelo Vestindo o Look (Prontos para Gerar & Baixar ou Colar no Google Flow)
+    angle_closeup_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph (HIGH-DEFINITION CLOSE-UP DETAIL ANGLE). Direct mirror reflection POV of the curvy copper-ginger red-haired woman holding white smartphone covering her face with one hand, stepped close to the mirror glass in sharp macro detail. Wearing {garment_spec}, gold link watch on right wrist. Her free hand is gently pulling the pocket opening and reinforced fabric seam of {garment_spec} outward to clearly demonstrate fabric elasticity, high-density weave, and impeccable stitching up close. {env_bg_en}. Strictly preserve 100% the exact garment details, pocket design, and fabric color of {garment_spec}. Ultra-detailed 8K photorealism, zero text on screen."""
+
+    angle_back_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph (REAR / BACK VIEW 3/4 ANGLE IN MIRROR). Direct mirror reflection POV showing the curvy copper-ginger red-haired woman turned 145 degrees with her back angled toward the mirror glass, holding the white smartphone covering her upper face as she looks back into the mirror reflection. Wearing {garment_spec}, white sneakers, gold watch. Clearly showcasing the complete back design, rear pockets, back waistband fit, rear seams, and flattering silhouette of {garment_spec} without any distortion. {env_bg_en}. Strictly NO secondary mirror behind her. Ultra-detailed 8K photorealism, zero text on screen."""
+
+    angle_side_prompt = f"""Vertical 9:16 point-of-view mirror selfie photograph (45-DEGREE SIDE PROFILE ANGLE). Direct mirror reflection POV of the curvy copper-ginger red-haired woman pivoted in a dynamic 45-degree side profile stance in front of the full-length mirror, holding white smartphone covering her upper face, free hand resting near the side pocket/waistline of {garment_spec}. Highlighting the lateral drape, side seam, pocket depth, and smooth non-marking fit of {garment_spec}. {env_bg_en}. Ultra-detailed 8K photorealism, zero text on screen."""
+
+    model_angles = [
+        {
+            "id": "front",
+            "title": "Ângulo 1: Frente (Corpo Inteiro no Espelho)",
+            "badge": "Cena Inicial",
+            "subtitle": "Modelo ruiva de frente vestindo o look completo no ambiente escolhido",
+            "prompt_en": model_image_prompt
+        },
+        {
+            "id": "closeup",
+            "title": "Ângulo 2: Close-up Detalhes (Mão Puxando Bolso e Costura)",
+            "badge": "Detalhe de Perto",
+            "subtitle": "Aproximação rápida mostrando uma das mãos puxando bolso, costura e elasticidade",
+            "prompt_en": angle_closeup_prompt
+        },
+        {
+            "id": "back",
+            "title": "Ângulo 3: Costas / Parte de Trás (Caimento & Bolso Traseiro)",
+            "badge": "Parte de Trás",
+            "subtitle": "Modelo virada mostrando detalhes de trás, bolso traseiro e costura reforçada",
+            "prompt_en": angle_back_prompt
+        },
+        {
+            "id": "side",
+            "title": "Ângulo 4: Perfil Lateral 45° (Silhueta & Modelagem)",
+            "badge": "Lateral",
+            "subtitle": "Visão lateral destacando caimento que não marca e corte da peça",
+            "prompt_en": angle_side_prompt
+        }
+    ]
 
     scene_1_audio = script.get("scene_1_text") or ""
     scene_2_audio = script.get("scene_2_text") or ""
@@ -854,36 +938,31 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
     narration_mode = (req.narration_mode or "separate").lower()
 
     # Prompts de Vídeo - Modo 1: Narração Separada em Outro Site (CapCut / ElevenLabs)
-    # Foco 100% no visual hiper-rápido de movimentos, aproximação em close-up, puxão de bolso/costura com uma das mãos e cortes sem ruído de voz no Flow
-    scene_1_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 1 (0 to 10 seconds). The camera viewpoint is the reflection in a full-length wall mirror, with the solid room interior behind the model (strictly NO mirror behind her back). High energy, ultra-fast dynamic commercial pacing. Curvy copper-ginger red-haired model with natural shoulder waves, holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing delicate gold chain necklace, gold link watch on right wrist, thin gold bracelet on left wrist, white sneakers. Wearing {garment_spec}. {env_bg_en}. High-definition close-up shot and continuous high-speed agile micro-movements ({custom_movements}): model immediately steps forward into a sharp close-up view near the mirror to show details up close; with her free hand, she gently pulls the pocket and fabric seam demonstrating elasticity and reinforced stitching; rubs fingers across the fabric weave to highlight texture and zero transparency; swiftly pivots and turns to showcase the back details, rear pockets, back seams, and 360-degree fit. Ultra-fast jump cuts (every 1.2s to 1.5s). Strict visual consistency: always preserve 100% the exact garment characteristics, pockets, stitching, and cut of {garment_spec} without distortion. Ultra-realistic 8K photorealism, exact reference lighting with authentic floor reflections."""
+    # Estilo TIME-LAPSE ACELERADO com cortes rápidos (0.8s-1.2s) mostrando todos os ângulos do look
+    scene_1_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 1 (0 to 10 seconds). Fast-paced time-lapse style speed-ramped fashion try-on (1.3x accelerated time-lapse feel) with ultra-fast jump cuts every 0.8s to 1.2s showcasing multiple angles of the outfit. Direct reflection in a full-length wall mirror (solid room interior behind model, strictly NO mirror behind her back). Curvy copper-ginger red-haired model with natural shoulder waves, holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing delicate gold chain necklace, gold link watch on right wrist, thin gold bracelet on left wrist, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid time-lapse sequence of dynamic movements ({custom_movements}): Cut 1 (Front Angle): model steps briskly forward toward mirror; Cut 2 (High-Definition Close-Up Shot): model moves right up close to camera as her free hand gently pulls the pocket and fabric seam outward demonstrating extreme elasticity and reinforced stitching; Cut 3 (Side Profile Angle): swift 45-degree pivot gliding hand along waistline; Cut 4 (Back Angle): fast energetic spin showing rear pockets, back seams, and flattering 360-degree fit. Strict visual consistency: always preserve 100% the exact garment characteristics, pockets, stitching, and cut of {garment_spec} across all fast cuts. Ultra-realistic 8K photorealism."""
 
-    scene_2_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 2 (10 to 20 seconds). Direct mirror reflection POV (solid room behind the model, NO mirror behind her back). Fast energetic commercial fashion TikTok. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid continuous actions ({custom_movements}): model steps close to mirror in high-definition macro detail, uses one hand to gently pull the pocket and fabric seam demonstrating elasticity and reinforced finish; briskly turns from front to profile and back to exhibit rear details, pockets, and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Strict garment consistency: always retains exact clothing design, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism, exact diffuse boutique overhead lighting and dark floor reflections."""
+    scene_2_prompt_separate = f"""Vertical 9:16 mirror selfie POV video animation, Scene 2 (10 to 20 seconds). Fast-paced time-lapse style speed-ramped editing (1.3x accelerated time-lapse feel) with rapid jump cuts every 0.8s to 1.2s showing multiple angles. Direct mirror reflection POV (solid room behind the model, NO mirror behind her back). Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid continuous multi-angle actions ({custom_movements}): model steps close to mirror in high-definition macro detail, uses one hand to gently pull and snap the pocket and side seam proving elasticity and reinforced finish; briskly turns from front to profile and back to exhibit rear details, pockets, and silhouette; sweeps copper hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Strict garment consistency: always retains exact clothing design, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism."""
 
     # Prompts de Vídeo - Modo 2: Narração Embutida Diretamente no Vídeo Gerado pelo Flow
-    # Inclui o diálogo em áudio nativo em português brasileiro sincronizado com as ações visuais
-    scene_1_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 1 (0 to 10 seconds). Direct mirror reflection POV (solid room interior behind model, strictly NO mirror behind her back). High energy, ultra-fast dynamic commercial pacing. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing gold jewelry, gold watch on right wrist, white sneakers. Wearing {garment_spec}. {env_bg_en}. High-definition close-up shot and continuous high-speed agile micro-movements ({custom_movements}): model immediately steps forward into a sharp close-up view near the mirror to show details up close; with her free hand, she gently pulls the pocket and fabric seam demonstrating elasticity and reinforced stitching; rubs fingers across the fabric weave to highlight texture and zero transparency; swiftly pivots and turns to showcase the back details, rear pockets, back seams, and 360-degree fit. Ultra-fast jump cuts (every 1.2s to 1.5s). Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_1_audio}". The model speaks with vibrant high-converting TikTok Shop cadence; her lips and face remain naturally occluded behind the white smartphone held in front of her face. Strict garment consistency: always preserves exact clothing details, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism, exact reference lighting with authentic floor reflections."""
+    scene_1_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 1 (0 to 10 seconds). Fast-paced time-lapse style speed-ramped fashion try-on (1.3x accelerated time-lapse feel) with ultra-fast jump cuts every 0.8s to 1.2s showcasing multiple angles of the outfit. Direct mirror reflection POV (solid room interior behind model, strictly NO mirror behind her back). Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face covering upper face and eyes. Wearing gold jewelry, gold watch on right wrist, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid time-lapse sequence of dynamic movements ({custom_movements}): Cut 1 (Front Angle): model steps briskly forward; Cut 2 (High-Definition Close-Up Shot): model moves close to mirror as her free hand gently pulls the pocket and fabric seam demonstrating elasticity and reinforced stitching; Cut 3 (Side Profile & Back Angles): swift energetic turn showcasing rear pockets, back details, and 360-degree fit. Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_1_audio}". Her lips and face remain occluded behind the white smartphone. Strict garment consistency: always preserves exact clothing details, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism."""
 
-    scene_2_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 2 (10 to 20 seconds). Direct mirror reflection POV (solid room behind model, strictly NO mirror behind her back). Fast energetic commercial fashion TikTok. Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid continuous actions ({custom_movements}): model steps close to mirror in high-definition macro detail, uses one hand to gently pull the pocket and fabric seam demonstrating elasticity and reinforced finish; briskly turns from front to profile and back to exhibit rear details, pockets, and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_2_audio}". Persuasive call-to-action tone delivered in clear Brazilian Portuguese, concluding right as the finger points to the cart at 9-10 seconds. Strict garment consistency: always retains exact clothing design, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism, exact diffuse boutique overhead lighting and dark floor reflections."""
+    scene_2_prompt_embedded = f"""Vertical 9:16 mirror selfie POV video animation with synchronized dialogue audio, Scene 2 (10 to 20 seconds). Fast-paced time-lapse style speed-ramped editing (1.3x accelerated time-lapse feel) with rapid jump cuts every 0.8s to 1.2s showing multiple angles. Direct mirror reflection POV (solid room behind model, strictly NO mirror behind her back). Curvy copper-ginger red-haired model holding white smartphone locked with one hand in front of face. Wearing gold watch on right wrist, delicate gold jewelry, white sneakers. Wearing {garment_spec}. {env_bg_en}. Rapid continuous multi-angle actions ({custom_movements}): model steps close to mirror in high-definition macro detail, uses one hand to gently pull the pocket and fabric seam demonstrating elasticity and reinforced finish; briskly turns from front to profile and back to exhibit rear details, pockets, and silhouette; sweeps hair back over shoulder. At the 9s to 10s mark, extends index finger pointing straight down firmly toward the bottom of the screen (cart CTA button). Spoken dialogue in natural conversational Brazilian Portuguese (PT-BR) audio track: "{scene_2_audio}". Strict garment consistency: always retains exact clothing design, pockets, back details, and seams of {garment_spec}. Ultra-realistic 8K photorealism."""
 
     # Seleção dos prompts ativos de acordo com a opção escolhida
     if narration_mode == "embedded":
         active_scene_1 = scene_1_prompt_embedded
         active_scene_2 = scene_2_prompt_embedded
-        flow_instructions = f"""INSTRUÇÕES PARA O GOOGLE FLOW (MODO NARRAÇÃO EMBUTIDA):
-1. Faça o upload da imagem da sua modelo ruiva ('03_REFERENCIAS/Modelo e ambiente 1.jpeg') e do ambiente ({env_title}).
-2. Gere o look inicial usando o 'Prompt de Imagem (Modelo Vestindo o Produto)'.
-3. Use o Prompt da Cena 1 com Narração Embutida para gerar o primeiro clipe com áudio e fala nativa em português.
-4. Use o Prompt da Cena 2 com Narração Embutida para gerar o segundo clipe com áudio e CTA apontando para o carrinho.
-5. O Flow gerará vídeo + áudio diretamente em um único arquivo!"""
+        flow_instructions = f"""INSTRUÇÕES PARA O GOOGLE FLOW (MODO NARRAÇÃO EMBUTIDA + MÚLTIPLOS ÂNGULOS):
+1. Gere e baixe os 4 Ângulos da sua Modelo Ruiva vestindo o look no 'Estúdio de Imagens Multi-Ângulos' abaixo (ou copie os prompts dos 4 ângulos).
+2. Suba as imagens dos ângulos (Frente, Close-up Bolso/Costura, Costas e Perfil) no Google Flow.
+3. Use o Prompt da Cena 1 e da Cena 2 para animar os ângulos em ritmo Time-Lapse com cortes rápidos e fala em português!"""
     else:
         active_scene_1 = scene_1_prompt_separate
         active_scene_2 = scene_2_prompt_separate
-        flow_instructions = f"""INSTRUÇÕES PARA O GOOGLE FLOW (MODO NARRAÇÃO SEPARADA - RECOMENDADO):
-1. Faça o upload da imagem da sua modelo ruiva ('03_REFERENCIAS/Modelo e ambiente 1.jpeg') e do ambiente ({env_title}).
-2. Gere o look inicial usando o 'Prompt de Imagem (Modelo Vestindo o Produto)'.
-3. Use os Prompts Visuais das Cenas 1 e 2 no Flow para gerar clipes com foco total em velocidade de movimentos e detalhes do tecido.
-4. No CapCut (ou ElevenLabs / Fish Audio), gere a locução em PT-BR usando o 'Áudio da Locução' abaixo (Voz Jéssica a 1.15x).
-5. Junte os vídeos com o áudio no CapCut para sincronia perfeita e máxima conversão de vendas."""
+        flow_instructions = f"""INSTRUÇÕES PARA O GOOGLE FLOW (MODO NARRAÇÃO SEPARADA + MÚLTIPLOS ÂNGULOS):
+1. Gere e baixe os 4 Ângulos da sua Modelo Ruiva vestindo o look no 'Estúdio de Imagens Multi-Ângulos' abaixo (Frente, Close-up Bolso/Costura, Costas e Perfil).
+2. Suba as imagens geradas dos ângulos como frames/referências no Google Flow junto com os Prompts das Cenas 1 e 2 (estilo Time-Lapse rápido).
+3. No CapCut (ou ElevenLabs), gere a locução em PT-BR com o 'Áudio da Locução' abaixo (Voz Jéssica a 1.15x-1.20x) e sincronize!"""
 
     supabase_saved = save_generation_to_supabase({
         "product_name": prod,
@@ -903,6 +982,7 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
         "environment_title": env_title,
         "narration_mode": narration_mode,
         "model_image_prompt": model_image_prompt,
+        "model_angles": model_angles,
         "scene_1_prompt": active_scene_1,
         "scene_2_prompt": active_scene_2,
         "scene_1_prompt_separate": scene_1_prompt_separate,
@@ -915,3 +995,28 @@ def generate_flow_prompt(req: GenerateFlowPromptRequest):
         "movements_direction": script.get("movements_summary") or "",
         "flow_instructions": flow_instructions
     }
+
+
+@router.post("/generate-angle-image")
+def generate_angle_image_endpoint(req: GenerateAngleImageRequest):
+    """
+    Gera a imagem real da modelo ruiva salva vestindo a roupa escaneada no ângulo escolhido
+    (Frente, Close-up Bolso/Costura, Costas ou Perfil Lateral) usando o Gemini Image Generator.
+    """
+    ref_images = _load_saved_model_reference_b64(req.environment_id)
+    if req.product_images:
+        for p_img in req.product_images[:2]:
+            if p_img.get("data"):
+                ref_images.append({
+                    "data": p_img["data"],
+                    "mime_type": p_img.get("mime_type", "image/jpeg")
+                })
+
+    full_instruction = f"""Using the first reference image (the curvy copper-ginger red-haired woman holding a white smartphone in a mirror selfie) and the attached product reference image(s), generate a photorealistic 9:16 vertical mirror selfie image of this exact same red-haired woman wearing this exact garment with 100% fidelity to its color, fabric, pockets, and seams. Angle requested: {req.angle_title}. Detailed scene description: {req.angle_prompt}"""
+
+    res = generate_gemini_image(
+        prompt_text=full_instruction,
+        reference_images=ref_images,
+        api_key=req.api_key
+    )
+    return res

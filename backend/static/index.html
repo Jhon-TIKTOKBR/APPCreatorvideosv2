@@ -513,14 +513,14 @@
 
         <!-- Atalhos Rápidos de Comando -->
         <div class="flex flex-wrap gap-1.5">
-          <button type="button" onclick="setAgentQuickCommand('Quero movimentos mais rápidos: ela deve aproximar bem de perto em close-up e usar uma das mãos para puxar suavemente o bolso e a costura do tecido, demonstrando elasticidade e acabamento reforçado, mantendo sempre as características exatas da roupa.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
-            🔍 Close-up rápido puxando bolso e costura (1 mão)
+          <button type="button" onclick="setAgentQuickCommand('Use ganchos virais de choque de preço e dor real: Roteiro 1 com Tava tão barato que eu comprei foi logo 3 / Nem minha mãe acreditou no preço; Roteiro 2 com Eu tava cansada de roupa que aperta ou fica transparente; Roteiro 3 com Tá tão barato que se eu te falar o preço você não acredita.')" class="text-[11px] bg-pink-500/15 hover:bg-pink-500/30 border-pink-500/40 text-pink-200 hover:text-white px-2.5 py-1.5 rounded-lg border transition font-semibold">
+            🔥 Ganchos: "Tava tão barato que comprei 3 / Nem minha mãe acreditou"
           </button>
-          <button type="button" onclick="setAgentQuickCommand('Inclua movimentos rápidos virando para mostrar bem os detalhes da parte de trás da roupa, o bolso traseiro e o caimento perfeito sem marcar nada.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
-            🔄 Mostrar detalhes da parte de trás e bolso
+          <button type="button" onclick="setAgentQuickCommand('Quero cenas mais rápidas estilo Time-Lapse com cortes rápidos mostrando todos os ângulos do look: ela aproxima bem de perto em close-up e usa uma das mãos para puxar suavemente o bolso e a costura do tecido, demonstrando elasticidade e acabamento reforçado, mantendo sempre as características exatas da roupa.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            ⚡ Time-Lapse Rápido + Close-up Mão no Bolso/Costura
           </button>
-          <button type="button" onclick="setAgentQuickCommand('Deixe a fala mais curta, direta e energética, focando na qualidade absurda do tecido que não fica transparente e parece peça cara de boutique.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
-            ⚡ Fala mais rápida e energética
+          <button type="button" onclick="setAgentQuickCommand('Inclua cortes rápidos estilo time-lapse virando para mostrar bem os detalhes da parte de trás da roupa, o bolso traseiro e o caimento 360 graus sem marcar nada.')" class="text-[11px] bg-gray-800/90 hover:bg-pink-500/20 hover:border-pink-500/40 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition">
+            🔄 Mostrar Parte de Trás, Bolso e Ângulos 360°
           </button>
         </div>
 
@@ -696,19 +696,62 @@
         <p id="flow-instruction-step4">4. No CapCut, sincronize os clipes com o <strong>Áudio da Locução</strong> em PT-BR (Voz Jéssica a 1.15x).</p>
       </div>
 
-      <!-- 1. Prompt Imagem da Modelo no Ambiente Vestindo o Produto -->
-      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-amber-500/30 bg-amber-500/5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold text-xs uppercase tracking-wide">1. Prompt de Imagem (Keyframe Base)</span>
-            <span class="text-xs text-gray-300 font-medium">Modelo ruiva no ambiente vestindo o produto</span>
+      <!-- 1. Estúdio de Imagens Multi-Ângulos da Modelo (4 Ângulos Vestindo o Look) -->
+      <div class="glass-card rounded-2xl p-4 sm:p-6 border border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-[#101626] to-[#101626] space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-800/80 pb-3.5">
+          <div class="flex items-start sm:items-center gap-3">
+            <img src="/references/Modelo%20e%20ambiente%201.jpeg" class="w-12 h-12 rounded-xl object-cover border border-amber-500/40 flex-shrink-0" alt="Sua Modelo Salva">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold text-xs uppercase tracking-wide">1. Estúdio Multi-Ângulos da Sua Modelo (4 Ângulos)</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-500/20 text-pink-300 uppercase">Modelo Ruiva Salva + Seu Look</span>
+              </div>
+              <p class="text-xs text-gray-300 mt-1">
+                O Agente já combinou a foto salva da sua modelo ruiva com as características exatas da roupa escaneada em 4 ângulos prontos para gerar, baixar e colar no Google Flow!
+              </p>
+            </div>
           </div>
-          <button onclick="copyToClipboard('flow-model-image', this)" class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg bg-gray-800 hover:bg-amber-600 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-1.5 transition">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt Imagem
-          </button>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <a 
+              href="/references/Modelo%20e%20ambiente%201.jpeg" 
+              download="Modelo_Ruiva_Base.jpeg"
+              class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition border border-gray-700"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i> Baixar Foto Base da Modelo
+            </a>
+            <button 
+              type="button"
+              onclick="generateAllAnglesImages()"
+              id="btn-generate-all-angles"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-pink-600 hover:from-amber-600 hover:to-pink-700 text-xs font-bold text-white flex items-center gap-1.5 transition shadow-lg shadow-amber-500/20"
+            >
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Gerar os 4 Ângulos com Gemini
+            </button>
+          </div>
         </div>
-        <p class="text-[11px] text-gray-400 mb-2.5">Gera a fotografia hiper-realista da modelo ruiva no ambiente escolhido com a iluminação exata de boutique e o produto vestido antes da animação.</p>
-        <textarea id="flow-model-image" readonly class="w-full h-28 bg-[#0b0f19] border border-gray-800 rounded-xl p-3 text-xs text-gray-200 font-mono resize-none focus:outline-none focus:border-amber-500"></textarea>
+
+        <!-- Aviso informativo caso a chave esteja no plano gratuito do Google AI Studio -->
+        <div id="angle-image-status-banner" class="hidden p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+          <i data-lucide="info" class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"></i>
+          <div id="angle-image-status-text" class="leading-relaxed"></div>
+        </div>
+
+        <!-- Grid dos 4 Ângulos da Modelo (Frente, Close-up Bolso/Costura, Costas, Perfil Lateral) -->
+        <div id="model-angles-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Renderizado dinamicamente via JS -->
+        </div>
+
+        <!-- Campo oculto compatível com cópia do prompt principal -->
+        <div class="pt-2 border-t border-gray-800/80">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold text-gray-400">Prompt Master Base (Ângulo Frontal Completo):</span>
+            <button onclick="copyToClipboard('flow-model-image', this)" class="px-3 py-1 rounded-lg bg-gray-800 hover:bg-amber-600 text-[11px] font-semibold text-gray-200 hover:text-white flex items-center gap-1 transition">
+              <i data-lucide="copy" class="w-3 h-3"></i> Copiar Prompt Principal
+            </button>
+          </div>
+          <textarea id="flow-model-image" readonly class="w-full h-20 bg-[#0b0f19] border border-gray-800 rounded-xl p-2.5 text-[11px] text-gray-300 font-mono resize-none focus:outline-none focus:border-amber-500"></textarea>
+        </div>
       </div>
 
       <!-- 2. Prompt Visual Cena 1 -->
@@ -1710,6 +1753,7 @@
           if (data.product_name) {
             updateProductBadges(data.product_name);
           }
+          renderModelAngles(data.model_angles || []);
           applyNarrationModeToPrompts(selectedNarrationMode);
           goToStep(4);
         } else {
@@ -1720,6 +1764,152 @@
         console.error(err);
         showToast("Erro ao gerar prompts do Flow.");
       }
+    }
+
+    // Estúdio Multi-Ângulos da Modelo (4 Ângulos: Frente, Close-up Bolso/Costura, Costas, Perfil)
+    let currentModelAngles = [];
+    let generatedAngleImagesMap = {};
+
+    function renderModelAngles(angles) {
+      currentModelAngles = angles || [];
+      const grid = document.getElementById('model-angles-grid');
+      if (!grid) return;
+
+      grid.innerHTML = currentModelAngles.map(angle => {
+        const imgUrl = generatedAngleImagesMap[angle.id];
+        return `
+          <div class="p-4 rounded-xl bg-black/50 border border-gray-800 flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 text-amber-400"></i> ${angle.title}
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 uppercase">${angle.badge}</span>
+              </div>
+              <p class="text-[11px] text-gray-400">${angle.subtitle}</p>
+
+              <!-- Área da Imagem Gerada deste Ângulo -->
+              <div id="angle-preview-box-${angle.id}" class="${imgUrl ? '' : 'hidden'} relative rounded-xl overflow-hidden border border-amber-500/40 bg-gray-900 aspect-[9/16] max-h-72 mx-auto">
+                <img id="angle-img-${angle.id}" src="${imgUrl || ''}" class="w-full h-full object-cover" alt="${angle.title}">
+                <button 
+                  type="button"
+                  onclick="downloadAngleImage('${angle.id}')"
+                  class="absolute bottom-2.5 right-2.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-xl"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Baixar PNG
+                </button>
+              </div>
+
+              <!-- Prompt Individual deste Ângulo -->
+              <textarea id="angle-prompt-${angle.id}" readonly class="w-full h-20 bg-[#0b0f19] border border-gray-800 rounded-lg p-2 text-[11px] text-gray-300 font-mono resize-none focus:outline-none focus:border-amber-500">${angle.prompt_en}</textarea>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <button 
+                type="button"
+                id="btn-gen-angle-${angle.id}"
+                onclick="generateSingleAngleImage('${angle.id}')"
+                class="flex-1 py-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition"
+              >
+                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Gerar Imagem
+              </button>
+              <button 
+                type="button"
+                onclick="copyToClipboard('angle-prompt-${angle.id}', this)"
+                class="py-2 px-3 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Prompt
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    async function generateSingleAngleImage(angleId) {
+      const angle = currentModelAngles.find(a => a.id === angleId);
+      if (!angle) return;
+
+      const btn = document.getElementById(`btn-gen-angle-${angleId}`);
+      const banner = document.getElementById('angle-image-status-banner');
+      const bannerText = document.getElementById('angle-image-status-text');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="w-3.5 h-3.5 border-2 border-amber-300/30 border-t-amber-300 rounded-full animate-spin"></span> Gerando...';
+      }
+
+      const productRefs = uploadedPhotosList.length > 0
+        ? uploadedPhotosList.map(p => ({ data: p.dataUrl, mime_type: p.mime }))
+        : (uploadedVideoData && uploadedVideoData.frames ? uploadedVideoData.frames : []);
+
+      try {
+        const res = await fetch('/api/wizard/generate-angle-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            angle_id: angle.id,
+            angle_title: angle.title,
+            angle_prompt: angle.prompt_en,
+            environment_id: selectedEnvironment,
+            product_images: productRefs,
+            api_key: getStoredGeminiKey()
+          })
+        });
+        const data = await res.json();
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Gerar Imagem';
+          lucide.createIcons();
+        }
+
+        if (data.success && data.image_data_url) {
+          generatedAngleImagesMap[angleId] = data.image_data_url;
+          const box = document.getElementById(`angle-preview-box-${angleId}`);
+          const img = document.getElementById(`angle-img-${angleId}`);
+          if (img) img.src = data.image_data_url;
+          if (box) box.classList.remove('hidden');
+          showToast(`${angle.title} gerado com sucesso!`);
+        } else {
+          if (banner && bannerText) {
+            bannerText.innerHTML = `<strong>Aviso do Gerador de Imagens Gemini:</strong> ${data.message || 'Erro ao gerar imagem.'} <br><span class="text-emerald-300 font-semibold">💡 Dica rápida: Você já pode clicar em "Copiar Prompt" em cada um dos 4 ângulos abaixo + "Baixar Foto Base da Modelo" e colar direto no Google Flow ou Gemini Web (que gera as imagens gratuitamente)!</span>`;
+            banner.classList.remove('hidden');
+          }
+          showToast("Veja o aviso sobre geração de imagem no Plano Gratuito.");
+        }
+      } catch (e) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Gerar Imagem';
+          lucide.createIcons();
+        }
+        showToast("Erro de conexão ao gerar imagem deste ângulo.");
+      }
+    }
+
+    async function generateAllAnglesImages() {
+      for (const angle of currentModelAngles) {
+        await generateSingleAngleImage(angle.id);
+        const banner = document.getElementById('angle-image-status-banner');
+        if (banner && !banner.classList.contains('hidden')) {
+          break;
+        }
+      }
+    }
+
+    function downloadAngleImage(angleId) {
+      const dataUrl = generatedAngleImagesMap[angleId];
+      if (!dataUrl) return;
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `Modelo_Look_Angulo_${angleId}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("Imagem baixada!");
     }
 
     // Alternador Interativo de Modo de Narração no Passo 4

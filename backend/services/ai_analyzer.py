@@ -180,6 +180,102 @@ def run_llm_multimodal(system_prompt: str, contents: Any, api_key: Optional[str]
     return _call_gemini_rest(system_prompt, rest_parts, api_key=api_key, temperature=0.35)
 
 
+def generate_gemini_image(
+    prompt_text: str,
+    reference_images: Optional[List[Dict[str, str]]] = None,
+    api_key: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Gera imagem da modelo vestindo o produto em um ângulo específico usando os modelos
+    de imagem do Gemini (gemini-3.1-flash-image / gemini-2.5-flash-image / gemini-3-pro-image),
+    enviando a foto de referência salva da modelo + os prints do produto.
+    """
+    effective_key = get_effective_api_key(api_key)
+    if not effective_key:
+        return {
+            "success": False,
+            "error": "API_KEY_REQUIRED",
+            "message": "Conecte sua Chave Gemini no topo para gerar imagens."
+        }
+
+    parts: List[Dict[str, Any]] = []
+    if reference_images:
+        for img in reference_images[:4]:
+            raw_b64 = (img.get("data") or "").strip()
+            if "," in raw_b64:
+                raw_b64 = raw_b64.split(",", 1)[1]
+            if raw_b64:
+                parts.append({
+                    "inlineData": {
+                        "mimeType": img.get("mime_type") or "image/jpeg",
+                        "data": raw_b64
+                    }
+                })
+    parts.append({"text": prompt_text})
+
+    image_models = [
+        "gemini-3.1-flash-image",
+        "gemini-2.5-flash-image",
+        "gemini-3-pro-image",
+        "gemini-3.1-flash-lite-image"
+    ]
+
+    last_error_code = 0
+    last_error_msg = ""
+
+    for model_name in image_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={effective_key}"
+        payload = {
+            "contents": [{"parts": parts}],
+            "generationConfig": {
+                "responseModalities": ["IMAGE", "TEXT"]
+            }
+        }
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                resp_data = json.loads(resp.read().decode("utf-8"))
+                candidates = resp_data.get("candidates") or []
+                for cand in candidates:
+                    c_parts = cand.get("content", {}).get("parts", [])
+                    for cp in c_parts:
+                        inline = cp.get("inlineData") or cp.get("inline_data")
+                        if inline and inline.get("data"):
+                            mime = inline.get("mimeType") or inline.get("mime_type") or "image/png"
+                            b64_data = inline["data"]
+                            return {
+                                "success": True,
+                                "image_data_url": f"data:{mime};base64,{b64_data}",
+                                "model_used": model_name
+                            }
+        except urllib.error.HTTPError as he:
+            last_error_code = he.code
+            last_error_msg = he.read().decode("utf-8", errors="ignore")
+            logger.error(f"HTTP {he.code} no Gemini Image ({model_name}): {last_error_msg[:250]}")
+            continue
+        except Exception as e:
+            last_error_msg = str(e)
+            logger.error(f"Erro no Gemini Image ({model_name}): {e}")
+            continue
+
+    if last_error_code == 429 and ("free_tier" in last_error_msg.lower() or "limit: 0" in last_error_msg.lower()):
+        return {
+            "success": False,
+            "error": "FREE_TIER_IMAGE_QUOTA_ZERO",
+            "message": "O Google bloqueia a geração de imagens por API em chaves do Plano Gratuito (Free Tier limit: 0). Para gerar imagens direto pelo botão do app, ative o faturamento (Pay-as-you-go) no Google AI Studio — OU copie o Prompt do Ângulo abaixo e gere gratuitamente direto no Google Flow / Gemini Web!"
+        }
+
+    return {
+        "success": False,
+        "error": "IMAGE_GENERATION_FAILED",
+        "message": f"Não foi possível gerar a imagem via API neste momento (Código {last_error_code}). Você pode copiar o prompt deste ângulo abaixo e colar direto no Google Flow!"
+    }
+
+
 def analyze_video_content(
     caption: str,
     transcript: str,
