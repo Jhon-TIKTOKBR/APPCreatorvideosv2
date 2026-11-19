@@ -1869,14 +1869,22 @@
       handleManualSceneEdit(scriptId);
       const sc = generatedScripts.find(s => s.id === scriptId);
       if (!sc) return;
-      const words = `${sc.scene_1_text} ${sc.scene_2_text}`.trim().split(/\s+/).filter(Boolean);
+      let rawWords = `${sc.scene_1_text || ''} ${sc.scene_2_text || ''}`.trim().split(/\s+/).filter(Boolean);
+      const words = [];
+      for (const w of rawWords) {
+        const clean = w.toLowerCase().replace(/[.,!?;:]/g, '');
+        const prevClean = words.length ? words[words.length - 1].toLowerCase().replace(/[.,!?;:]/g, '') : null;
+        if (clean !== prevClean) {
+          words.push(w);
+        }
+      }
       if (words.length < 4) return;
       const mid = Math.floor(words.length / 2);
       sc.scene_1_text = words.slice(0, mid).join(' ');
       sc.scene_2_text = words.slice(mid).join(' ');
       sc.full_audio = `${sc.scene_1_text} ${sc.scene_2_text}`;
       renderScripts();
-      showToast("Cena 1 e Cena 2 equilibradas com a mesma quantidade de palavras!");
+      showToast("Cena 1 e Cena 2 equilibradas sem repetições e com a mesma quantidade de palavras!");
     }
 
     // Aprovar Roteiro e ir para Passo 3

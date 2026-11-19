@@ -57,19 +57,24 @@ def _clean_script_text(text: str) -> str:
         return ""
     t = text.strip()
 
-    # 1. Remove menções a preços/valores numéricos (ex: "R$ 49,90", "300 reais", "por 59 reais")
+    # 1. Remove qualquer menção a valores monetários/preços (ex: "R$ 49,90", "300 reais", "por 59 reais")
     t = re.sub(r"que\s+custam?\s+(?:mais\s+de\s+)?(?:R\$\s*)?\d+(?:[.,]\d+)?(?:\s*reais)?", "caríssimas de vitrine", t, flags=re.IGNORECASE)
     t = re.sub(r"de\s+(?:R\$\s*)?\d+(?:[.,]\d+)?(?:\s*reais)?\s+de\s+(?:shopping|boutique|loja)", "caríssima de boutique", t, flags=re.IGNORECASE)
     t = re.sub(r"(?:por\s+apenas|por\s+só|paguei\s+só|paguei\s+apenas|saindo\s+por|custa(?:ndo)?)\s*(?:R\$\s*)?\d+(?:[.,]\d+)?(?:\s*reais)?", "num valor inacreditável", t, flags=re.IGNORECASE)
     t = re.sub(r"R\$\s*\d+(?:[.,]\d+)?(?:\s*reais)?", "um valor surreal", t, flags=re.IGNORECASE)
-    t = re.sub(r"\b\d+(?:[.,]\d+)?\s*reais\b", "preço de banana", t, flags=re.IGNORECASE)
+    t = re.sub(r"\b\d+(?:[.,]\d+)?\s*reais\b", "preço inacreditável", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bcentenas\s+de\s+reais\b", "uma fortuna", t, flags=re.IGNORECASE)
+    # Remove qualquer formato numérico de centavos que indique preço (ex: "49,90", "29,99")
+    t = re.sub(r"\b\d{1,4}[.,]\d{2}\b", "baratinho", t)
 
     # 2. Remove palavras repetidas em sequência (ex: "muito muito", "linda linda", "esse esse")
     t = re.sub(r"\b([a-zA-Zá-úÁ-Ú]+)(?:[\s,]+\1\b)+", r"\1", t, flags=re.IGNORECASE)
     # Remove pares de palavras repetidos em sequência (ex: "no corpo no corpo", "de verdade de verdade")
     t = re.sub(r"\b([a-zA-Zá-úÁ-Ú]+\s+[a-zA-Zá-úÁ-Ú]+)(?:[\s,]+\1\b)+", r"\1", t, flags=re.IGNORECASE)
 
-    # Normaliza espaços múltiplos
+    # 3. Normaliza pontuação e espaços múltiplos
+    t = re.sub(r"\s+([.,!?;:])", r"\1", t)
+    t = re.sub(r"([.,!?;:])\1+", r"\1", t)
     t = re.sub(r"\s{2,}", " ", t).strip()
     return t
 
@@ -462,8 +467,8 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
                 "angle_title": "Versatilidade & Look Caro",
                 "target_emotion": "Sensação de estar usando calçado de marca cara",
                 "scene_1_text": f"A única peça que eu consigo usar o dia todo no trabalho e ir direto pro restaurante à noite sem cansar nada! Esse {prod} deixa qualquer look básico chique em segundos.",
-                "scene_2_text": "Parece aqueles modelos importados de vitrine que custam 400 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
-                "full_audio": f"A única peça que eu consigo usar o dia todo no trabalho e ir direto pro restaurante à noite sem cansar nada! Esse {prod} deixa qualquer look básico chique em segundos. Parece aqueles modelos importados de vitrine que custam 400 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+                "scene_2_text": "Parece aqueles modelos importados de vitrine caríssimos, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+                "full_audio": f"A única peça que eu consigo usar o dia todo no trabalho e ir direto pro restaurante à noite sem cansar nada! Esse {prod} deixa qualquer look básico chique em segundos. Parece aqueles modelos importados de vitrine caríssimos, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
                 "movements_summary": "Giro confiante de corpo inteiro no espelho, passo elegante à frente destacando os pés, vira de perfil de ambos os lados e finaliza com dedo indicador apontando direto para o botão do carrinho."
             }
         ]
@@ -494,8 +499,8 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
                 "angle_title": "Versatilidade (Dia a Dia à Festa)",
                 "target_emotion": "Praticidade e elegância de boutique de luxo",
                 "scene_1_text": f"A única peça que eu consigo usar de manhã no trabalho com alfaiataria e sair à noite sem precisar trocar! Essa {prod} é um absurdo de linda.",
-                "scene_2_text": "Parece aquelas peças de grife de shopping que custam 500 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
-                "full_audio": f"A única peça que eu consigo usar de manhã no trabalho com alfaiataria e sair à noite sem precisar trocar! Essa {prod} é um absurdo de linda. Parece aquelas peças de grife de shopping que custam 500 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+                "scene_2_text": "Parece aquelas peças de grife de shopping caríssimas, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+                "full_audio": f"A única peça que eu consigo usar de manhã no trabalho com alfaiataria e sair à noite sem precisar trocar! Essa {prod} é um absurdo de linda. Parece aquelas peças de grife de shopping caríssimas, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
                 "movements_summary": "Giro confiante de 360 graus exibindo o caimento com a bolsa/acessório, passo firme à frente, joga o cabelo ruivo e aponta direto para o botão do carrinho."
             }
         ]
@@ -525,9 +530,9 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
                 "id": 3,
                 "angle_title": "Efeito Salão / Tratamento Caro",
                 "target_emotion": "Sensação de economia inteligente com padrão profissional",
-                "scene_1_text": f"O único produto da minha rotina que me economizou centenas de reais em clínica e salão! Esse {prod} entrega um resultado profissional em menos de 2 minutos.",
-                "scene_2_text": "Parece aqueles importados caríssimos que custam 300 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
-                "full_audio": f"O único produto da minha rotina que me economizou centenas de reais em clínica e salão! Esse {prod} entrega um resultado profissional em menos de 2 minutos. Parece aqueles importados caríssimos que custam 300 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+                "scene_1_text": f"O único produto da minha rotina que me economizou uma fortuna em clínica e salão! Esse {prod} entrega um resultado profissional em menos de 2 minutos.",
+                "scene_2_text": "Parece aqueles importados de luxo super exclusivos, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+                "full_audio": f"O único produto da minha rotina que me economizou uma fortuna em clínica e salão! Esse {prod} entrega um resultado profissional em menos de 2 minutos. Parece aqueles importados de luxo super exclusivos, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
                 "movements_summary": "Giro dinâmico no espelho exibindo o visual impecável de perto, passo à frente com postura confiante, joga o cabelo ruivo e aponta direto para o botão do carrinho."
             }
         ]
@@ -561,8 +566,8 @@ def build_category_scripts(product_name: str, video_format: str, raw_context: st
             "angle_title": "Versatilidade (Trabalho ao Jantar)",
             "target_emotion": "Praticidade e sensação de estar elegante com roupa de shopping cara",
             "scene_1_text": f"A única peça do meu guarda-roupa que eu consigo usar no trabalho de manhã com blazer e ir direto pro restaurante à noite sem amassar nada! Esse {prod} é um absurdo de chique.",
-            "scene_2_text": "Parece aquelas peças de shopping que custam 300 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
-            "full_audio": f"A única peça do meu guarda-roupa que eu consigo usar no trabalho de manhã com blazer e ir direto pro restaurante à noite sem amassar nada! Esse {prod} é um absurdo de chique. Parece aquelas peças de shopping que custam 300 reais, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+            "scene_2_text": "Parece aquelas peças exclusivas de shopping caríssimo, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
+            "full_audio": f"A única peça do meu guarda-roupa que eu consigo usar no trabalho de manhã com blazer e ir direto pro restaurante à noite sem amassar nada! Esse {prod} é um absurdo de chique. Parece aquelas peças exclusivas de shopping caríssimo, mas no TikTok Shop tá num valor inacreditável. Aproveita enquanto tem estoque e garante no carrinho aqui embaixo!",
             "movements_summary": mov_3
         }
     ]
@@ -614,7 +619,7 @@ Sua missão é agir como um verdadeiro Diretor de Criação autônomo:
    Cada um dos 3 roteiros DEVE iniciar a Cena 1 com um gancho viral brasileiro de choque de preço ou dor real E desenvolver um MICRO-STORYTELLING humano e autêntico (expectativa vs. realidade, situação real de uso, reação da mãe/amigas ou superação de uma frustração com roupas), conectando a história aos detalhes reais vistos nas fotos:
    - Roteiro 1 (Choque de Preço + Storytelling de Expectativa vs. Realidade): Iniciar com "Tava tão barato que eu comprei foi logo 3...", "Nem minha mãe acreditou no preço que paguei nesse [produto]..." ou "Tá tão barato que se eu te falar o preço você não acredita...", contando que comprou achando que pelo preço seria simples, mas quando abriu o pacote e vestiu ficou chocada com o tecido, bolso e acabamento.
    - Roteiro 2 (Dor Real + Storytelling de Autoestima/Alívio): Iniciar com "Eu tava cansada de roupa que aperta e marca tudo..." ou "Eu já não aguentava mais passar raiva com roupa transparente...", contando uma situação real do dia a dia e como essa peça vestiu perfeitamente sem marcar nada.
-   - Roteiro 3 (Storytelling de Elogio / Loja Cara de Shopping): Iniciar com "Se eu te falar quanto paguei nesse [produto] você acha que é mentira...", contando que usou para sair/trabalhar e todo mundo achou que era peça de 300 reais de boutique.
+   - Roteiro 3 (Storytelling de Elogio / Loja Cara de Shopping): Iniciar com "Se eu te falar quanto paguei nesse [produto] você acha que é mentira...", contando que usou para sair/trabalhar e todo mundo achou que era peça importada de boutique caríssima.
 3. CENAS MAIS RÁPIDAS ESTILO TIME-LAPSE, APENAS MEIO GIRO (SEM CELULAR FLUTUANDO) E TELA 100% LIMPA:
    Em 'movements_summary', dirija a modelo em ritmo acelerado estilo TIME-LAPSE com cortes rápidos (fast jump cuts a cada 0.8s a 1.2s):
    - REGRA FÍSICA DO CELULAR NA MÃO (PROIBIDO CELULAR FLUTUANDO): Os dedos da mão da modelo envolvem e seguram firmemente o celular branco na frente do rosto o tempo todo (conectado fisicamente à mão, punho e braço — NUNCA solto ou flutuando no ar), mantendo a mesma posição mesmo quando ela se aproxima em close-up para mostrar a roupa mais de perto com a mão livre.
@@ -623,6 +628,12 @@ Sua missão é agir como um verdadeiro Diretor de Criação autônomo:
    - A mão livre puxa suavemente o bolso e a costura do tecido de perto demonstrando elasticidade e acabamento reforçado, mantendo sempre 100% as características exatas da roupa; finalização aos 9-10s apontando o dedo indicador para o carrinho.
 4. REGRA OBRIGATÓRIA DE EQUILÍBRIO DE PALAVRAS (CENA 1 = CENA 2):
    O roteiro da Cena 2 ('scene_2_text') DEVE ter EXATAMENTE A MESMA QUANTIDADE DE PALAVRAS que o roteiro da Cena 1 ('scene_1_text') — cerca de 28 a 32 palavras na Cena 1 e 28 a 32 palavras na Cena 2.
+5. REGRA DE PROIBIÇÃO ABSOLUTA DE PREÇOS OU VALORES NO ROTEIRO:
+   - NUNCA cite preços, valores em dinheiro, "R$", "reais", centavos ou números de preço (como "49,90", "29 reais", "300 reais", "500 reais").
+   - MESMO QUE o print/foto contenha preço impresso ou a descrição cite um valor, É TERMINANTEMENTE PROIBIDO falar qualquer número ou valor monetário no roteiro.
+   - Use exclusivamente expressões sem números: "tava tão barato", "nem minha mãe acreditou no preço", "parece peça de grife caríssima", "preço inacreditável no carrinho laranja", "tá tão barato que se eu te falar você não acredita".
+6. REGRA DE ZERO REPETIÇÃO DE PALAVRAS:
+   - A IA NUNCA DEVE REPETIR PALAVRAS nem frases. Proibido repetições consecutivas (como "comprei comprei", "linda linda", "olha olha") ou repetições excessivas do mesmo substantivo/adjetivo entre a Cena 1 e a Cena 2. Use vocabulário rico, variado e natural.
 
 Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 {
@@ -748,7 +759,7 @@ Sua missão:
    Crie 3 roteiros 100% inéditos modelados no produto do vídeo, onde cada roteiro inicia a Cena 1 com um gancho viral brasileiro E desenvolve um MICRO-STORYTELLING humano e autêntico (expectativa vs. realidade, situação real de uso, reação da mãe/amigas ou superação de frustração com roupas):
    - Roteiro 1 (Choque de Preço + Storytelling de Expectativa vs. Realidade): Iniciar com "Tava tão barato que eu comprei foi logo 3...", "Nem minha mãe acreditou no preço que paguei nesse [produto]..." ou "Tá tão barato que se eu te falar o preço você não acredita...".
    - Roteiro 2 (Dor Real + Storytelling de Autoestima/Alívio): Iniciar com "Eu tava cansada de roupa que aperta e marca tudo..." ou "Eu já não aguentava mais roupa transparente...".
-   - Roteiro 3 (Storytelling de Elogio / Loja Cara de Shopping): Iniciar com "Se eu te falar quanto paguei nesse [produto] com acabamento de shopping você acha que é mentira...".
+   - Roteiro 3 (Storytelling de Elogio / Loja Cara de Shopping): Iniciar com "Se eu te falar quanto paguei nesse [produto] com acabamento de grife você acha que é mentira...".
 3. CENAS MAIS RÁPIDAS ESTILO TIME-LAPSE, APENAS MEIO GIRO (SEM CELULAR FLUTUANDO) E TELA 100% LIMPA:
    Em 'movements_summary', inclua movimentação super rápida e dinâmica estilo TIME-LAPSE com cortes rápidos (fast jump cuts a cada 0.8s–1.2s):
    - REGRA FÍSICA DO CELULAR NA MÃO (PROIBIDO CELULAR FLUTUANDO): Os dedos da mão da modelo envolvem e seguram firmemente o celular branco na frente do rosto o tempo todo (conectado fisicamente à mão, punho e braço — NUNCA solto ou flutuando no ar), mantendo a mesma posição mesmo quando ela se aproxima em close-up para mostrar a roupa mais de perto com a mão livre.
@@ -757,6 +768,12 @@ Sua missão:
    - Aproximação rápida em close-up com a mão livre puxando suavemente o bolso e a costura do tecido demonstrando elasticidade e acabamento reforçado, mantendo sempre as características exatas da roupa; e apontando para o carrinho aos 9-10s.
 4. REGRA OBRIGATÓRIA DE EQUILÍBRIO DE PALAVRAS (CENA 1 = CENA 2):
    O roteiro da Cena 2 ('scene_2_text') DEVE ter EXATAMENTE A MESMA QUANTIDADE DE PALAVRAS que o roteiro da Cena 1 ('scene_1_text') — cerca de 28 a 32 palavras na Cena 1 e 28 a 32 palavras na Cena 2.
+5. REGRA DE PROIBIÇÃO ABSOLUTA DE PREÇOS OU VALORES NO ROTEIRO:
+   - NUNCA mencione preços, valores em dinheiro, "R$", "reais", centavos ou números de preço (como "49,90", "29 reais", "300 reais", "500 reais").
+   - MESMO QUE o vídeo concorrente mencione preço, É TERMINANTEMENTE PROIBIDO falar qualquer número ou valor monetário no roteiro.
+   - Use exclusivamente expressões coloquiais sem nenhum número: "tava tão barato", "nem minha mãe acreditou no preço", "parece peça de grife caríssima", "preço inacreditável no carrinho laranja", "tá tão barato que se eu te falar você não acredita".
+6. REGRA DE ZERO REPETIÇÃO DE PALAVRAS:
+   - A IA NUNCA DEVE REPETIR PALAVRAS nem frases. Proibido repetições consecutivas (como "comprei comprei", "linda linda", "olha olha") ou repetições excessivas do mesmo substantivo/adjetivo entre a Cena 1 e a Cena 2. Use vocabulário rico, variado e natural.
 
 Responda SEMPRE em JSON rigoroso com esta estrutura exata:
 {
@@ -887,7 +904,9 @@ Sua missão:
 1. Obedeça 100% ao pedido do usuário (seja sobre mostrar detalhes da parte de trás, puxar o bolso e a costura em close-up rápido com uma das mãos, mudar o tom da fala, destacar elasticidade ou alterar a oferta).
 2. REGRA DO CELULAR FIXO E TELA LIMPA: Em 'movements_summary', garanta que o celular permaneça 100% fixo e imóvel na mesma posição cobrindo o rosto durante todo o vídeo (mesmo quando aproximar para mostrar a roupa mais de perto), e que NÃO apareça nenhum texto ou ícone na tela.
 3. REGRA DE EQUILÍBRIO DE PALAVRAS: O texto da Cena 2 ('scene_2_text') DEVE ter EXATAMENTE a mesma quantidade de palavras da Cena 1 ('scene_1_text').
-4. Escreva uma resposta curta e amigável em 'agent_reply' confirmando o que você alterou.
+4. REGRA DE PROIBIÇÃO ABSOLUTA DE PREÇOS OU VALORES NO ROTEIRO: NUNCA cite preços, valores em dinheiro, 'R$', 'reais', centavos ou números de preço no roteiro. Use exclusivamente termos sem números como 'tava tão barato', 'preço inacreditável no carrinho', 'parece peça de boutique caríssima'.
+5. REGRA DE ZERO REPETIÇÃO DE PALAVRAS: A IA NUNCA DEVE REPETIR PALAVRAS nem termos na mesma frase ou entre a Cena 1 e a Cena 2. Use vocabulário variado, natural e persuasivo.
+6. Escreva uma resposta curta e amigável em 'agent_reply' confirmando o que você alterou.
 
 Responda SEMPRE em JSON rigoroso:
 {
